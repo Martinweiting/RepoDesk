@@ -61,6 +61,8 @@ const unavailableApi: RepoDeskApi = {
   async openProjectTerminal() { return unavailable() },
   async openProjectEditor() { return unavailable() },
   async openProjectGithub() { return unavailable() },
+  async checkForUpdates() { return unavailable() },
+  async openUpdatePage() { return unavailable() },
   onRuntimeChanged(callback) {
     runtimeListeners.add(callback)
     return () => runtimeListeners.delete(callback)

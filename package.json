@@ -1,7 +1,12 @@
 {
   "name": "repodesk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Windows 專案控制中心：集中管理、啟動並開啟本機開發專案。",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Martinweiting/RepoDesk.git"
+  },
+  "homepage": "https://github.com/Martinweiting/RepoDesk",
   "main": "./out/main/index.js",
   "license": "MIT",
   "type": "module",
@@ -34,7 +39,7 @@
   "build": {
     "appId": "app.repodesk.desktop",
     "productName": "RepoDesk",
-    "artifactName": "RepoDesk Setup.${ext}",
+    "artifactName": "RepoDesk-Setup-v${version}.${ext}",
     "asar": true,
     "directories": {
       "output": "release"

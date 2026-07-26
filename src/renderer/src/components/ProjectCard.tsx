@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  AppWindow,
   Check,
   ExternalLink,
   FolderOpen,
@@ -206,10 +207,17 @@ export function ProjectCard({
       <div className="project-card-footer">
         {isRunning ? (
           <>
-            <button type="button" className="primary-action open-action" onClick={onOpenUrl}>
-              <ExternalLink size={16} />
-              開啟網站
-            </button>
+            {runtime.url || project.customUrl ? (
+              <button type="button" className="primary-action open-action" onClick={onOpenUrl}>
+                <ExternalLink size={16} />
+                開啟網站
+              </button>
+            ) : (
+              <span className="running-app-label">
+                <AppWindow size={16} />
+                應用程式執行中
+              </span>
+            )}
             <button type="button" className="stop-action" onClick={onStop} aria-label="停止專案">
               <Square size={15} fill="currentColor" />
             </button>

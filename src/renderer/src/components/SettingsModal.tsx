@@ -1,31 +1,47 @@
 import { useEffect, useState } from 'react'
 import {
+  CheckCircle2,
   Chrome,
+  Download,
   Image,
   LayoutGrid,
   Plus,
+  RefreshCw,
   Save,
   Settings2,
   Trash2,
   X
 } from 'lucide-react'
-import type { ProjectCategory, UserSettings } from '../../../shared/types'
+import type {
+  ProjectCategory,
+  UserSettings,
+  VersionCheckResult
+} from '../../../shared/types'
 
 interface SettingsModalProps {
   settings: UserSettings
+  appVersion: string
   onClose: () => void
   onSave: (settings: UserSettings) => Promise<void>
+  onCheckVersion: () => Promise<VersionCheckResult>
+  onOpenUpdatePage: () => Promise<void>
 }
 
 export function SettingsModal({
   settings,
+  appVersion,
   onClose,
-  onSave
+  onSave,
+  onCheckVersion,
+  onOpenUpdatePage
 }: SettingsModalProps) {
   const [draft, setDraft] = useState(settings)
   const [saving, setSaving] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState('#7c6cff')
+  const [checkingVersion, setCheckingVersion] = useState(false)
+  const [versionResult, setVersionResult] = useState<VersionCheckResult | null>(null)
+  const [versionError, setVersionError] = useState('')
 
   useEffect(() => setDraft(settings), [settings])
 
@@ -72,6 +88,19 @@ export function SettingsModal({
     })
   }
 
+  async function checkVersion(): Promise<void> {
+    setCheckingVersion(true)
+    setVersionError('')
+    try {
+      setVersionResult(await onCheckVersion())
+    } catch (error) {
+      setVersionResult(null)
+      setVersionError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setCheckingVersion(false)
+    }
+  }
+
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section
@@ -93,6 +122,44 @@ export function SettingsModal({
         </div>
 
         <div className="settings-body">
+          <section className="settings-section version-section">
+            <div className="version-heading">
+              <div>
+                <h3>版本檢查</h3>
+                <p>目前版本 v{appVersion || '—'}；檢查 GitHub 上的最新公開版本。</p>
+              </div>
+              <button
+                type="button"
+                className="small-button"
+                onClick={() => void checkVersion()}
+                disabled={checkingVersion}
+              >
+                <RefreshCw className={checkingVersion ? 'spin' : ''} size={16} />
+                {checkingVersion ? '檢查中' : '檢查版本'}
+              </button>
+            </div>
+            {versionResult && (
+              <div className={`version-result ${versionResult.status}`}>
+                <CheckCircle2 size={18} />
+                <div>
+                  <strong>{versionResult.status === 'update-available'
+                    ? `發現新版本 v${versionResult.latestVersion}`
+                    : `目前已是最新版 v${versionResult.currentVersion}`}</strong>
+                  <span>{versionResult.source === 'github-release'
+                    ? '資料來源：GitHub Releases'
+                    : '目前尚無 Release，改由專案版本資訊確認'}</span>
+                </div>
+                {versionResult.status === 'update-available' && (
+                  <button type="button" className="small-button" onClick={() => void onOpenUpdatePage()}>
+                    <Download size={15} />
+                    前往下載
+                  </button>
+                )}
+              </div>
+            )}
+            {versionError && <p className="version-error" role="alert">{versionError}</p>}
+          </section>
+
           <section className="settings-section">
             <h3>專案卡片顯示方式</h3>
             <p>這項設定會套用到整個工作區，專案的圖示與預覽圖資料都會保留。</p>
@@ -160,6 +227,20 @@ export function SettingsModal({
                 type="checkbox"
                 checked={draft.autoOpenBrowser}
                 onChange={(event) => setDraft({ ...draft, autoOpenBrowser: event.target.checked })}
+              />
+            </label>
+            <label className="switch-row">
+              <div>
+                <strong>Windows 登入後自動啟動</strong>
+                <span>開機登入 Windows 時自動開啟 RepoDesk，預設為關閉</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={draft.launchAtLogin}
+                onChange={(event) => setDraft({
+                  ...draft,
+                  launchAtLogin: event.target.checked
+                })}
               />
             </label>
           </section>

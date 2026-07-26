@@ -27,6 +27,7 @@ describe('RepoDeskStore defaults', () => {
     const state = store.getState()
     expect(state.projects).toEqual([])
     expect(state.scanHistory).toEqual([])
+    expect(state.settings.launchAtLogin).toBe(false)
     expect('scanRoots' in state.settings).toBe(false)
   })
 
@@ -48,6 +49,7 @@ describe('RepoDeskStore defaults', () => {
     const state = store.getState()
     expect(state.settings.defaultBrowser).toBe('chrome')
     expect(state.settings.scanDepth).toBe(6)
+    expect(state.settings.launchAtLogin).toBe(false)
     expect('scanRoots' in state.settings).toBe(false)
   })
 

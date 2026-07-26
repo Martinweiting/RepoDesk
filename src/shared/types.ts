@@ -45,6 +45,7 @@ export interface ScanHistoryEntry {
 export interface UserSettings {
   defaultBrowser: GlobalBrowser
   autoOpenBrowser: boolean
+  launchAtLogin: boolean
   scanDepth: number
   cardDisplayMode: CardDisplayMode
   categories: ProjectCategory[]
@@ -77,6 +78,14 @@ export interface BootstrapPayload {
   state: PersistedState
   runtimes: RuntimeState[]
   logs: Record<string, LogEntry[]>
+  appVersion: string
+}
+
+export interface VersionCheckResult {
+  currentVersion: string
+  latestVersion: string
+  status: 'up-to-date' | 'update-available'
+  source: 'github-release' | 'repository'
 }
 
 export interface ScanResult {
@@ -106,6 +115,8 @@ export interface RepoDeskApi {
   openProjectTerminal(projectId: string): Promise<void>
   openProjectEditor(projectId: string): Promise<void>
   openProjectGithub(projectId: string): Promise<void>
+  checkForUpdates(): Promise<VersionCheckResult>
+  openUpdatePage(): Promise<void>
   onRuntimeChanged(callback: (runtime: RuntimeState) => void): () => void
   onLog(callback: (entry: LogEntry) => void): () => void
 }

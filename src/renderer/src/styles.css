@@ -1225,6 +1225,22 @@ button:disabled {
   border-top: 1px solid rgba(255, 255, 255, 0.045);
 }
 
+.running-app-label {
+  display: inline-flex;
+  min-width: 0;
+  height: 34px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #6de0bd;
+  background: rgba(66, 214, 170, 0.08);
+  border: 1px solid rgba(66, 214, 170, 0.18);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
 .primary-action {
   display: inline-flex;
   align-items: center;
@@ -1806,6 +1822,67 @@ button:disabled {
 .settings-section {
   padding: 21px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.version-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.version-heading h3,
+.version-heading p {
+  margin: 0;
+}
+
+.version-heading p {
+  margin-top: 5px;
+}
+
+.version-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 13px;
+  padding: 11px 12px;
+  color: #77dbbd;
+  background: rgba(66, 214, 170, 0.07);
+  border: 1px solid rgba(66, 214, 170, 0.16);
+  border-radius: 10px;
+}
+
+.version-result.update-available {
+  color: #c4bcff;
+  background: rgba(124, 108, 255, 0.08);
+  border-color: rgba(124, 108, 255, 0.22);
+}
+
+.version-result > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.version-result strong {
+  color: currentColor;
+  font-size: 14px;
+}
+
+.version-result span {
+  margin-top: 2px;
+  color: #777e91;
+  font-size: 12px;
+}
+
+.version-error {
+  margin: 12px 0 0 !important;
+  padding: 9px 11px;
+  color: #ee9bad !important;
+  background: rgba(242, 118, 141, 0.06);
+  border: 1px solid rgba(242, 118, 141, 0.16);
+  border-radius: 8px;
 }
 
 .settings-section:last-child {

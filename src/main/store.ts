@@ -17,6 +17,7 @@ import {
 const DEFAULT_SETTINGS: UserSettings = {
   defaultBrowser: 'edge',
   autoOpenBrowser: true,
+  launchAtLogin: false,
   scanDepth: 4,
   cardDisplayMode: 'icon',
   categories: DEFAULT_PROJECT_CATEGORIES
@@ -110,6 +111,7 @@ export class RepoDeskStore {
         settings: {
           defaultBrowser: parsed.settings?.defaultBrowser === 'chrome' ? 'chrome' : 'edge',
           autoOpenBrowser: parsed.settings?.autoOpenBrowser !== false,
+          launchAtLogin: parsed.settings?.launchAtLogin === true,
           scanDepth: Math.max(1, Math.min(8, parsed.settings?.scanDepth ?? 4)),
           cardDisplayMode: parsed.settings?.cardDisplayMode === 'preview' ? 'preview' : 'icon',
           categories: normalizeCategories(parsed.settings ?? {})
@@ -183,6 +185,7 @@ export class RepoDeskStore {
     this.state.settings = {
       defaultBrowser: settings.defaultBrowser,
       autoOpenBrowser: settings.autoOpenBrowser,
+      launchAtLogin: settings.launchAtLogin === true,
       scanDepth: Math.max(1, Math.min(8, settings.scanDepth)),
       cardDisplayMode: settings.cardDisplayMode === 'preview' ? 'preview' : 'icon',
       categories

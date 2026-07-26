@@ -62,6 +62,7 @@ function relativeDate(value: string | null): string {
 
 export function App() {
   const [state, setState] = useState<PersistedState | null>(null)
+  const [appVersion, setAppVersion] = useState('')
   const [runtimes, setRuntimes] = useState<Record<string, RuntimeState>>({})
   const [logs, setLogs] = useState<Record<string, LogEntry[]>>({})
   const [filter, setFilter] = useState<FilterKey>('all')
@@ -84,6 +85,7 @@ export function App() {
       .then((payload) => {
         if (!active) return
         setState(payload.state)
+        setAppVersion(payload.appVersion)
         setRuntimes(Object.fromEntries(payload.runtimes.map((runtime) => [runtime.projectId, runtime])))
         setLogs(payload.logs)
       })
@@ -373,7 +375,7 @@ export function App() {
     void runAction(async () => {
       const runtime = await api.startProject(projectId)
       setRuntimes((current) => ({ ...current, [projectId]: runtime }))
-    }, '正在啟動專案，偵測到網址後會自動開啟瀏覽器。')
+    }, '正在啟動；若是開發伺服器，偵測到網址後會自動開啟瀏覽器。')
   }
 
   function stop(projectId: string): void {
@@ -637,8 +639,11 @@ export function App() {
       {settingsOpen && (
         <SettingsModal
           settings={state.settings}
+          appVersion={appVersion}
           onClose={() => setSettingsOpen(false)}
           onSave={updateSettings}
+          onCheckVersion={() => api.checkForUpdates()}
+          onOpenUpdatePage={() => api.openUpdatePage()}
         />
       )}
 

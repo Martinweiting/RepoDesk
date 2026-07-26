@@ -11,15 +11,15 @@
 </p>
 
 <p align="center">
-  <img alt="版本 v0.2.0" src="https://img.shields.io/badge/version-v0.2.0-7c6cff">
+  <img alt="版本 v0.3.0" src="https://img.shields.io/badge/version-v0.3.0-7c6cff">
   <img alt="Windows 10 與 Windows 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-3b82f6">
   <img alt="架構 x64" src="https://img.shields.io/badge/architecture-x64-16b8a6">
 </p>
 
 <p align="center">
-  <a href="/Martinweiting/RepoDesk/releases/download/v0.2.0/RepoDesk%20Setup.exe"><strong>下載 Windows 安裝程式</strong></a>
+  <a href="https://github.com/Martinweiting/RepoDesk/releases/download/v0.3.0/RepoDesk-Setup-v0.3.0.exe"><strong>下載 Windows 安裝程式</strong></a>
   ·
-  <a href="/Martinweiting/RepoDesk/releases/latest">查看最新版本</a>
+  <a href="https://github.com/Martinweiting/RepoDesk/releases/latest">查看最新版本</a>
 </p>
 
 RepoDesk 把散落在不同磁碟與資料夾中的本機專案收進一個工作區。你可以掃描專案、補上封面與說明、設定啟動命令，再從卡片直接啟動開發伺服器、查看終端輸出或開啟網站。
@@ -34,12 +34,13 @@ RepoDesk 把散落在不同磁碟與資料夾中的本機專案收進一個工�
 - 依名稱、介紹、標籤、路徑、狀態與類型尋找專案。
 - 從卡片啟動、停止或重新啟動專案。
 - 查看即時終端輸出，偵測 `localhost` 網址後開啟瀏覽器。
+- 掃描並啟動沒有 `package.json` 的 Windows 應用程式，例如 `.exe`、`.cmd`、`.bat` 與 `.ps1`。
 - 直接開啟專案資料夾、PowerShell、Visual Studio Code 或 GitHub 頁面。
 - 用收藏、狀態、自訂類型、圖示與預覽圖整理大型專案清單。
 
 ## 下載與安裝
 
-RepoDesk `v0.2.0` 提供 Windows x64 安裝程式。系統需求如下：
+RepoDesk `v0.3.0` 提供 Windows x64 安裝程式。系統需求如下：
 
 - Windows 10 或 Windows 11，x64。
 - 受管理專案本身所需的執行環境，例如 Node.js、Godot、Python、Rust 或 .NET。
@@ -47,7 +48,7 @@ RepoDesk `v0.2.0` 提供 Windows x64 安裝程式。系統需求如下：
 
 安裝步驟：
 
-1. 前往 [Releases](/Martinweiting/RepoDesk/releases/latest)，下載 `RepoDesk Setup.exe`。
+1. 前往 [Releases](https://github.com/Martinweiting/RepoDesk/releases/latest)，下載 `RepoDesk-Setup-v0.3.0.exe`。
 2. 開啟安裝程式，選擇安裝位置。
 3. 從桌面捷徑或開始功能表啟動 RepoDesk。
 
@@ -77,6 +78,7 @@ RepoDesk 每次都會請你重新選擇掃描位置，不會保存預設的掃�
 | Python | `pyproject.toml`，搭配 `app.py` 時可啟動 | `python app.py` |
 | Rust | `Cargo.toml` | `cargo run` |
 | .NET | `.sln` | `dotnet run` |
+| Windows 應用程式 | `.exe`、`.cmd`、`.bat` 或 `.ps1` | 依檔案自動建立啟動命令 |
 
 ## 設定卡片並啟動專案
 
@@ -98,7 +100,7 @@ RepoDesk 每次都會請你重新選擇掃描位置，不會保存預設的掃�
 
 搜尋框可比對名稱、介紹、標籤與完整路徑，按下 `Ctrl+K` 可直接將游標移到搜尋框。左側欄可切換正在執行、我的最愛、開發中、暫停、已完成，以及各個自訂專案類型。
 
-在「偏好設定」中可以切換圖示模式與預覽圖模式、選擇預設瀏覽器、控制偵測到網址後是否自動開啟，並新增或調整專案類型。個別專案仍可覆寫全域瀏覽器設定。
+在「偏好設定」中可以切換圖示模式與預覽圖模式、選擇預設瀏覽器、控制偵測到網址後是否自動開啟、設定 Windows 登入後自動啟動，並新增或調整專案類型。個別專案仍可覆寫全域瀏覽器設定。
 
 ![偏好設定，可切換卡片外觀、瀏覽器與專案類型](docs/images/preferences.png)
 
@@ -115,6 +117,14 @@ RepoDesk 沒有帳號與雲端同步功能。專案清單及偏好設定保存�
 
 從卡片選單、批量管理或「清空列表」移除專案，只會刪除 RepoDesk 中的紀錄。原始專案資料夾與其中的檔案不會被刪除。掃描時也不會修改受管理專案的內容。
 
+## 版本檢查與更新
+
+設定中的「版本檢查」會先查詢 GitHub Releases；如果儲存庫尚未建立公開 Release，則改讀 GitHub 上的專案版本資訊。發現新版本時，可以直接前往下載頁面。
+
+目前版本 `v0.3.0` 的安裝檔 SHA-256：
+
+`D6904930A344B76F5FFDB546460CB50C4BE409BCF550F4496EC21A590ECBACB7`
+
 ## 目前版本的使用限制
 
 - 目前僅提供 Windows x64 安裝程式。
@@ -125,4 +135,4 @@ RepoDesk 沒有帳號與雲端同步功能。專案清單及偏好設定保存�
 
 ## 版本
 
-目前公開版本為 `v0.2.0`，發行內容包括專案掃描與管理、卡片外觀、自訂類型、即時終端輸出、開發網址偵測，以及 Edge 與 Chrome 開啟設定。安裝檔與 SHA-256 校驗值列於 [GitHub Release](/Martinweiting/RepoDesk/releases/tag/v0.2.0)。
+目前公開版本為 `v0.3.0`，發行內容包括專案掃描與管理、Windows 應用程式啟動、卡片外觀、自訂類型、即時終端輸出、開發網址偵測、版本檢查、Windows 登入後自動啟動，以及 Edge 與 Chrome 開啟設定。安裝檔與 SHA-256 校驗值列於 [GitHub Release](https://github.com/Martinweiting/RepoDesk/releases/tag/v0.3.0)。

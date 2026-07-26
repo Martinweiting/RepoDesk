@@ -43,6 +43,8 @@ const ACCENTS = [
   '#57a867'
 ]
 
+const WINDOWS_LAUNCH_EXTENSIONS = ['.exe', '.cmd', '.bat', '.ps1'] as const
+
 interface PackageJson {
   name?: string
   description?: string
@@ -130,6 +132,27 @@ function commandsFromPackage(pkg: PackageJson | null): string[] {
   return ordered.slice(0, 12).map((script) => `npm run ${script}`)
 }
 
+function windowsLaunchCommands(fileNames: Set<string>): string[] {
+  const ranked = [...fileNames]
+    .filter((name) => WINDOWS_LAUNCH_EXTENSIONS.some((extension) =>
+      name.toLocaleLowerCase('en-US').endsWith(extension)))
+    .filter((name) => !/^(unins\d*|uninstall|update|crashpad_handler)\.exe$/i.test(name))
+    .sort((first, second) => {
+      const firstExtension = WINDOWS_LAUNCH_EXTENSIONS.findIndex((extension) =>
+        first.toLocaleLowerCase('en-US').endsWith(extension))
+      const secondExtension = WINDOWS_LAUNCH_EXTENSIONS.findIndex((extension) =>
+        second.toLocaleLowerCase('en-US').endsWith(extension))
+      return firstExtension - secondExtension || first.localeCompare(second, 'en-US')
+    })
+
+  return ranked.map((name) => {
+    if (name.toLocaleLowerCase('en-US').endsWith('.ps1')) {
+      return `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\${name}"`
+    }
+    return `".\\${name}"`
+  })
+}
+
 function defaultCommandFromPackage(pkg: PackageJson | null): string {
   if (!pkg?.scripts) return ''
   const script = ['dev', 'start', 'serve', 'preview'].find((name) => name in pkg.scripts!)
@@ -149,7 +172,8 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     }
   }
 
-  let availableCommands = commandsFromPackage(pkg)
+  const windowsCommands = windowsLaunchCommands(fileNames)
+  let availableCommands = [...commandsFromPackage(pkg), ...windowsCommands]
   let defaultCommand = defaultCommandFromPackage(pkg)
   if (fileNames.has('project.godot')) availableCommands = ['godot --editor', ...availableCommands]
   if (fileNames.has('pyproject.toml') && await exists(join(projectPath, 'app.py'))) {
@@ -161,10 +185,12 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     defaultCommand = 'python app.py'
   }
   if (fileNames.has('Cargo.toml')) defaultCommand = 'cargo run'
+  defaultCommand ||= windowsCommands[0] ?? ''
 
   const now = new Date().toISOString()
   const normalizedPath = normalize(projectPath)
   const tags = inferTags(pkg, fileNames)
+  if (windowsCommands.length && !tags.includes('Windows')) tags.push('Windows')
   const githubUrl = await githubUrlFromProject(projectPath, pkg)
   return {
     id: randomUUID(),
@@ -207,6 +233,7 @@ export async function discoverProjects(root: string, maxDepth: number): Promise<
     const fileNames = new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name))
     const isProject = [...MARKERS].some((marker) => fileNames.has(marker))
       || entries.some((entry) => entry.isFile() && entry.name.endsWith('.sln'))
+      || windowsLaunchCommands(fileNames).length > 0
 
     if (isProject) {
       try {

@@ -2,7 +2,7 @@ import { readdir, unlink } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const releaseDirectory = resolve(process.cwd(), 'release')
-const installerPattern = /^RepoDesk Setup(?: [0-9][^\\/]*)?\.exe(?:\.blockmap)?$/i
+const installerPattern = /^RepoDesk(?: Setup|-Setup)(?:(?: v|-v)\d+\.\d+\.\d+(?:[-+][^\\/]*)?)?\.exe(?:\.blockmap)?$/i
 
 let entries = []
 try {

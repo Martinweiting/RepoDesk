@@ -33,7 +33,7 @@ export function inferCategoryId(tags: string[]): string {
   const normalized = new Set(tags.map((tag) => tag.toLocaleLowerCase('en-US')))
   if (normalized.has('game') || normalized.has('godot')) return 'game'
   if (normalized.has('ai')) return 'ai'
-  if (normalized.has('electron')) return 'desktop'
+  if (normalized.has('electron') || normalized.has('windows')) return 'desktop'
   if (['react', 'next.js', 'vue', 'svelte', 'vite'].some((tag) => normalized.has(tag))) return 'web'
   if (['python', 'rust', '.net', 'node.js'].some((tag) => normalized.has(tag))) return 'tools'
   return 'uncategorized'

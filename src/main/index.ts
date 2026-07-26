@@ -12,9 +12,11 @@ import type {
   ProjectRecord,
   RuntimeState,
   UserSettings,
-  ProjectVisualKind
+  ProjectVisualKind,
+  VersionCheckResult
 } from '../shared/types'
 import { consumeDevelopmentOutput } from '../shared/runtime'
+import { compareVersions } from '../shared/version'
 import { RepoDeskStore } from './store'
 
 interface RunningProject {
@@ -31,6 +33,11 @@ const logs = new Map<string, LogEntry[]>()
 let mainWindow: BrowserWindow | null = null
 let store: RepoDeskStore
 let isQuitting = false
+
+const GITHUB_RELEASE_API = 'https://api.github.com/repos/Martinweiting/RepoDesk/releases/latest'
+const REPOSITORY_PACKAGE_URL =
+  'https://raw.githubusercontent.com/Martinweiting/RepoDesk/main/package.json'
+const UPDATE_PAGE_URL = 'https://github.com/Martinweiting/RepoDesk/releases'
 
 function stoppedRuntime(projectId: string): RuntimeState {
   return {
@@ -100,6 +107,63 @@ async function openInBrowser(url: string, browser: GlobalBrowser): Promise<void>
     windowsHide: false
   })
   child.unref()
+}
+
+function applyLaunchAtLogin(enabled: boolean): void {
+  if (!app.isPackaged) return
+  app.setLoginItemSettings({
+    openAtLogin: enabled,
+    path: process.execPath
+  })
+}
+
+async function checkForUpdates(): Promise<VersionCheckResult> {
+  const currentVersion = app.getVersion()
+  let latestVersion = ''
+  let source: VersionCheckResult['source'] = 'github-release'
+
+  try {
+    const releaseResponse = await fetch(GITHUB_RELEASE_API, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': `RepoDesk/${currentVersion}`
+      },
+      signal: AbortSignal.timeout(10_000)
+    })
+    if (releaseResponse.ok) {
+      const release = await releaseResponse.json() as { tag_name?: string }
+      latestVersion = release.tag_name?.replace(/^v/i, '') ?? ''
+    } else if (releaseResponse.status !== 404) {
+      throw new Error(`GitHub 回應 ${releaseResponse.status}`)
+    }
+
+    if (!latestVersion) {
+      source = 'repository'
+      const manifestResponse = await fetch(REPOSITORY_PACKAGE_URL, {
+        headers: { 'User-Agent': `RepoDesk/${currentVersion}` },
+        signal: AbortSignal.timeout(10_000)
+      })
+      if (!manifestResponse.ok) throw new Error(`版本資訊回應 ${manifestResponse.status}`)
+      const manifest = await manifestResponse.json() as { version?: string }
+      latestVersion = manifest.version?.trim() ?? ''
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`無法檢查版本，請確認網路連線後再試一次：${message}`)
+  }
+
+  if (!/^\d+\.\d+\.\d+(?:[-+].*)?$/.test(latestVersion)) {
+    throw new Error('線上版本資訊格式不正確。')
+  }
+
+  return {
+    currentVersion,
+    latestVersion,
+    status: compareVersions(latestVersion, currentVersion) > 0
+      ? 'update-available'
+      : 'up-to-date',
+    source
+  }
 }
 
 function selectedBrowser(project: ProjectRecord): GlobalBrowser {
@@ -349,8 +413,12 @@ function registerIpc(): void {
     runtimes: store.getState().projects.map((project) =>
       runtimeHistory.get(project.id) ?? stoppedRuntime(project.id)
     ),
-    logs: Object.fromEntries(logs)
+    logs: Object.fromEntries(logs),
+    appVersion: app.getVersion()
   }))
+  ipcMain.handle('app:check-updates', () => checkForUpdates())
+  ipcMain.handle('app:open-update-page', () =>
+    openInBrowser(UPDATE_PAGE_URL, store.getState().settings.defaultBrowser))
 
   ipcMain.handle('project:select-add', async () => {
     const result = await dialog.showOpenDialog(focusMainWindow(), {
@@ -419,7 +487,11 @@ function registerIpc(): void {
     removeProjectsFromList(Array.isArray(projectIds) ? projectIds : []))
   ipcMain.handle('project:clear', async () =>
     removeProjectsFromList(store.getState().projects.map((project) => project.id)))
-  ipcMain.handle('settings:update', (_event, settings: UserSettings) => store.updateSettings(settings))
+  ipcMain.handle('settings:update', async (_event, settings: UserSettings) => {
+    const state = await store.updateSettings(settings)
+    applyLaunchAtLogin(state.settings.launchAtLogin)
+    return state
+  })
   ipcMain.handle('visual:select', (_event, kind: ProjectVisualKind) => selectProjectVisual(kind))
   ipcMain.handle('project:start', (_event, projectId: string) => startProject(projectId))
   ipcMain.handle('project:stop', (_event, projectId: string) => stopProject(projectId))
@@ -479,6 +551,7 @@ function registerIpc(): void {
 app.whenReady().then(async () => {
   store = new RepoDeskStore(join(app.getPath('userData'), 'repodesk-data.json'))
   await store.initialize()
+  applyLaunchAtLogin(store.getState().settings.launchAtLogin)
   registerIpc()
   await createWindow()
 

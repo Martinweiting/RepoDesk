@@ -27,6 +27,8 @@ const api: RepoDeskApi = {
   openProjectTerminal: (projectId: string) => ipcRenderer.invoke('project:open-terminal', projectId),
   openProjectEditor: (projectId: string) => ipcRenderer.invoke('project:open-editor', projectId),
   openProjectGithub: (projectId: string) => ipcRenderer.invoke('project:open-github', projectId),
+  checkForUpdates: () => ipcRenderer.invoke('app:check-updates'),
+  openUpdatePage: () => ipcRenderer.invoke('app:open-update-page'),
   onRuntimeChanged: (callback: (runtime: RuntimeState) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, runtime: RuntimeState): void => callback(runtime)
     ipcRenderer.on('runtime:changed', listener)

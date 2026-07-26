@@ -98,6 +98,46 @@ describe('project inspection', () => {
     expect(projects[0].tags).toContain('Godot')
     expect(projects[0].command).toBe('godot --editor')
   })
+
+  it('discovers a standalone Windows executable without project metadata', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'repodesk-windows-root-'))
+    temporaryDirectories.push(root)
+    const projectDirectory = join(root, 'Portable Tool')
+    const { mkdir } = await import('node:fs/promises')
+    await mkdir(projectDirectory)
+    await writeFile(join(projectDirectory, 'PortableTool.exe'), '')
+
+    const projects = await discoverProjects(root, 2)
+
+    expect(projects).toHaveLength(1)
+    expect(projects[0].name).toBe('Portable Tool')
+    expect(projects[0].command).toBe('".\\PortableTool.exe"')
+    expect(projects[0].availableCommands).toContain('".\\PortableTool.exe"')
+    expect(projects[0].tags).toContain('Windows')
+    expect(projects[0].categoryId).toBe('desktop')
+  })
+
+  it('offers common Windows launch scripts after executable files', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'repodesk-windows-commands-'))
+    temporaryDirectories.push(directory)
+    await Promise.all([
+      writeFile(join(directory, 'Launcher.exe'), ''),
+      writeFile(join(directory, 'Start.cmd'), ''),
+      writeFile(join(directory, 'Legacy.bat'), ''),
+      writeFile(join(directory, 'Run.ps1'), ''),
+      writeFile(join(directory, 'Uninstall.exe'), '')
+    ])
+
+    const project = await inspectProject(directory)
+
+    expect(project.command).toBe('".\\Launcher.exe"')
+    expect(project.availableCommands).toEqual([
+      '".\\Launcher.exe"',
+      '".\\Start.cmd"',
+      '".\\Legacy.bat"',
+      'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\Run.ps1"'
+    ])
+  })
 })
 
 describe('project categories', () => {
