@@ -5,10 +5,12 @@ import {
   Download,
   Image,
   LayoutGrid,
+  Moon,
   Plus,
   RefreshCw,
   Save,
   Settings2,
+  Sun,
   Trash2,
   X
 } from 'lucide-react'
@@ -22,6 +24,7 @@ interface SettingsModalProps {
   settings: UserSettings
   appVersion: string
   onClose: () => void
+  onPreviewTheme: (theme: UserSettings['theme']) => void
   onSave: (settings: UserSettings) => Promise<void>
   onCheckVersion: () => Promise<VersionCheckResult>
   onOpenUpdatePage: () => Promise<void>
@@ -31,6 +34,7 @@ export function SettingsModal({
   settings,
   appVersion,
   onClose,
+  onPreviewTheme,
   onSave,
   onCheckVersion,
   onOpenUpdatePage
@@ -44,6 +48,11 @@ export function SettingsModal({
   const [versionError, setVersionError] = useState('')
 
   useEffect(() => setDraft(settings), [settings])
+
+  function closeWithoutSaving(): void {
+    onPreviewTheme(settings.theme)
+    onClose()
+  }
 
   async function save(): Promise<void> {
     setSaving(true)
@@ -102,7 +111,7 @@ export function SettingsModal({
   }
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={closeWithoutSaving}>
       <section
         className="settings-modal"
         role="dialog"
@@ -116,7 +125,7 @@ export function SettingsModal({
             <span className="eyebrow">RepoDesk</span>
             <h2 id="settings-modal-title">偏好設定</h2>
           </div>
-          <button type="button" className="icon-button close-button" onClick={onClose} aria-label="關閉">
+          <button type="button" className="icon-button close-button" onClick={closeWithoutSaving} aria-label="關閉">
             <X size={20} />
           </button>
         </div>
@@ -158,6 +167,35 @@ export function SettingsModal({
               </div>
             )}
             {versionError && <p className="version-error" role="alert">{versionError}</p>}
+          </section>
+
+          <section className="settings-section">
+            <h3>介面主題</h3>
+            <p>預設使用深色模式；亮色模式會同步套用到首頁、卡片、抽屜與設定面板。</p>
+            <div className="theme-options">
+              <button
+                type="button"
+                className={draft.theme === 'dark' ? 'theme-option selected' : 'theme-option'}
+                onClick={() => {
+                  onPreviewTheme('dark')
+                  setDraft({ ...draft, theme: 'dark' })
+                }}
+              >
+                <Moon size={18} />
+                <span><strong>深色模式</strong><small>適合長時間開發</small></span>
+              </button>
+              <button
+                type="button"
+                className={draft.theme === 'light' ? 'theme-option selected' : 'theme-option'}
+                onClick={() => {
+                  onPreviewTheme('light')
+                  setDraft({ ...draft, theme: 'light' })
+                }}
+              >
+                <Sun size={18} />
+                <span><strong>亮色模式</strong><small>明亮清晰的工作區</small></span>
+              </button>
+            </div>
           </section>
 
           <section className="settings-section">
@@ -324,7 +362,7 @@ export function SettingsModal({
         </div>
 
         <div className="modal-footer">
-          <button type="button" className="secondary-button" onClick={onClose}>取消</button>
+          <button type="button" className="secondary-button" onClick={closeWithoutSaving}>取消</button>
           <button type="button" className="save-button" onClick={() => void save()} disabled={saving}>
             <Save size={16} />
             {saving ? '儲存中' : '儲存設定'}

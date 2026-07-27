@@ -28,6 +28,7 @@ describe('RepoDeskStore defaults', () => {
     expect(state.projects).toEqual([])
     expect(state.scanHistory).toEqual([])
     expect(state.settings.launchAtLogin).toBe(false)
+    expect(state.settings.theme).toBe('dark')
     expect('scanRoots' in state.settings).toBe(false)
   })
 
@@ -39,6 +40,7 @@ describe('RepoDeskStore defaults', () => {
       settings: {
         defaultBrowser: 'chrome',
         autoOpenBrowser: false,
+        theme: 'light',
         scanRoots: ['Z:\\Private\\Projects'],
         scanDepth: 6,
         cardDisplayMode: 'preview'
@@ -50,6 +52,7 @@ describe('RepoDeskStore defaults', () => {
     expect(state.settings.defaultBrowser).toBe('chrome')
     expect(state.settings.scanDepth).toBe(6)
     expect(state.settings.launchAtLogin).toBe(false)
+    expect(state.settings.theme).toBe('light')
     expect('scanRoots' in state.settings).toBe(false)
   })
 

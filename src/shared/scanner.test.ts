@@ -42,7 +42,9 @@ describe('project inspection', () => {
 
     const project = await inspectProject(directory)
     expect(project.command).toBe('npm run dev')
-    expect(project.availableCommands).toContain('npm run build')
+    expect(project.folderName).toBe(directory.split(/\\/).pop())
+    expect(project.availableCommands).toEqual(['npm run dev'])
+    expect(project.secondaryCommands).toContain('npm run build')
     expect(project.tags).toEqual(expect.arrayContaining(['React', 'Vite']))
     expect(project.description).toBe('A sample project')
     expect(PROJECT_ICON_IDS).toContain(project.iconId as (typeof PROJECT_ICON_IDS)[number])
@@ -59,7 +61,8 @@ describe('project inspection', () => {
 
     const project = await inspectProject(directory)
     expect(project.command).toBe('')
-    expect(project.availableCommands).toEqual(expect.arrayContaining([
+    expect(project.availableCommands).toEqual([])
+    expect(project.secondaryCommands).toEqual(expect.arrayContaining([
       'npm run build',
       'npm run test',
       'npm run postinstall'
@@ -111,6 +114,7 @@ describe('project inspection', () => {
 
     expect(projects).toHaveLength(1)
     expect(projects[0].name).toBe('Portable Tool')
+    expect(projects[0].folderName).toBe('Portable Tool')
     expect(projects[0].command).toBe('".\\PortableTool.exe"')
     expect(projects[0].availableCommands).toContain('".\\PortableTool.exe"')
     expect(projects[0].tags).toContain('Windows')
@@ -131,11 +135,31 @@ describe('project inspection', () => {
     const project = await inspectProject(directory)
 
     expect(project.command).toBe('".\\Launcher.exe"')
-    expect(project.availableCommands).toEqual([
-      '".\\Launcher.exe"',
+    expect(project.availableCommands).toEqual(['".\\Launcher.exe"'])
+    expect(project.secondaryCommands).toEqual([
       '".\\Start.cmd"',
       '".\\Legacy.bat"',
       'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\Run.ps1"'
+    ])
+  })
+
+  it('keeps obvious test and setup scripts out of the primary launch command', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'repodesk-secondary-scripts-'))
+    temporaryDirectories.push(directory)
+    await Promise.all([
+      writeFile(join(directory, 'test_docker.bat'), ''),
+      writeFile(join(directory, 'setup-and-update.bat'), ''),
+      writeFile(join(directory, 'generate_placeholder_icons.ps1'), '')
+    ])
+
+    const project = await inspectProject(directory)
+
+    expect(project.command).toBe('')
+    expect(project.availableCommands).toEqual([])
+    expect(project.secondaryCommands).toEqual([
+      '".\\setup-and-update.bat"',
+      '".\\test_docker.bat"',
+      'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\generate_placeholder_icons.ps1"'
     ])
   })
 })

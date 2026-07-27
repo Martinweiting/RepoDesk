@@ -169,6 +169,7 @@ export function ProjectCard({
 
       <button type="button" className="project-copy" onClick={onEdit}>
         <h3>{project.name}</h3>
+        <span className="project-folder-name">資料夾 · {project.folderName}</span>
         <p>{project.missing ? '找不到專案資料夾，請確認路徑是否已變更。' : project.description}</p>
       </button>
 
@@ -186,18 +187,20 @@ export function ProjectCard({
         {!project.tags.length && !category && <span>未分類</span>}
       </div>
 
-      {project.githubUrl && (
-        <button
-          type="button"
-          className="project-github-link"
-          onClick={onOpenGithub}
-          title={project.githubUrl}
-        >
-          <Github size={16} />
-          <span>{project.githubUrl.replace(/^https:\/\//, '')}</span>
-          <ExternalLink size={14} />
-        </button>
-      )}
+      <div className="project-github-slot">
+        {project.githubUrl && (
+          <button
+            type="button"
+            className="project-github-link"
+            onClick={onOpenGithub}
+            title={project.githubUrl}
+          >
+            <Github size={16} />
+            <span>{project.githubUrl.replace(/^https:\/\//, '')}</span>
+            <ExternalLink size={14} />
+          </button>
+        )}
+      </div>
 
       <button type="button" className="project-command" onClick={onShowLogs}>
         <TerminalSquare size={14} />

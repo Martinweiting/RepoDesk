@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { inspectProject } from '../shared/scanner'
 import type {
@@ -15,7 +15,7 @@ import type {
   ProjectVisualKind,
   VersionCheckResult
 } from '../shared/types'
-import { consumeDevelopmentOutput } from '../shared/runtime'
+import { consumeDevelopmentOutput, normalizeProjectUrl } from '../shared/runtime'
 import { compareVersions } from '../shared/version'
 import { RepoDeskStore } from './store'
 
@@ -83,7 +83,8 @@ function findBrowserExecutable(browser: GlobalBrowser): string | null {
   const candidates = browser === 'edge'
     ? [
         programFilesX86 && join(programFilesX86, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-        programFiles && join(programFiles, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
+        programFiles && join(programFiles, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+        localAppData && join(localAppData, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
       ]
     : [
         programFiles && join(programFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'),
@@ -95,18 +96,48 @@ function findBrowserExecutable(browser: GlobalBrowser): string | null {
 }
 
 async function openInBrowser(url: string, browser: GlobalBrowser): Promise<void> {
-  if (!/^https?:\/\//i.test(url)) throw new Error('網址必須以 http:// 或 https:// 開頭。')
+  const normalizedUrl = normalizeProjectUrl(url)
+  if (!normalizedUrl) throw new Error('網址格式不正確，請使用 http:// 或 https:// 開頭。')
   const executable = findBrowserExecutable(browser)
   if (!executable) {
-    await shell.openExternal(url)
+    await shell.openExternal(normalizedUrl)
     return
   }
-  const child = spawn(executable, [url], {
+  const child = spawn(executable, [normalizedUrl], {
     detached: true,
     stdio: 'ignore',
     windowsHide: false
   })
+  await new Promise<void>((resolve, reject) => {
+    child.once('spawn', () => resolve())
+    child.once('error', reject)
+  })
   child.unref()
+}
+
+function launchProjectProcess(project: ProjectRecord): ChildProcess {
+  const command = project.command.trim()
+  const directExecutable = command.match(/^"([^\"]+\.exe)"$/i)
+    ?? command.match(/^([^\s"]+\.exe)$/i)
+
+  if (directExecutable) {
+    const executablePath = directExecutable[1]
+    const resolvedPath = isAbsolute(executablePath)
+      ? executablePath
+      : join(project.path, executablePath.replace(/^\.\\/, ''))
+    return spawn(resolvedPath, [], {
+      cwd: project.path,
+      env: { ...process.env, FORCE_COLOR: '0' },
+      windowsHide: true
+    })
+  }
+
+  return spawn(command, {
+    cwd: project.path,
+    shell: process.env.ComSpec ?? true,
+    env: { ...process.env, FORCE_COLOR: '0' },
+    windowsHide: true
+  })
 }
 
 function applyLaunchAtLogin(enabled: boolean): void {
@@ -216,7 +247,7 @@ async function selectProjectVisual(kind: ProjectVisualKind): Promise<string | nu
 async function maybeOpenBrowser(project: ProjectRecord, runtime: RuntimeState): Promise<void> {
   const running = runningProjects.get(project.id)
   if (!running || running.browserOpened || !store.getState().settings.autoOpenBrowser) return
-  const url = runtime.url || project.customUrl
+  const url = normalizeProjectUrl(project.customUrl || runtime.url)
   if (!url) return
   await openInBrowser(url, selectedBrowser(project))
   running.browserOpened = true
@@ -244,7 +275,7 @@ async function startProject(projectId: string): Promise<RuntimeState> {
     projectId,
     status: 'starting',
     pid: null,
-    url: project.customUrl,
+    url: normalizeProjectUrl(project.customUrl),
     error: '',
     startedAt: new Date().toISOString()
   }
@@ -252,12 +283,17 @@ async function startProject(projectId: string): Promise<RuntimeState> {
   appendLog(projectId, 'system', `執行：${project.command}`)
   appendLog(projectId, 'system', `位置：${project.path}`)
 
-  const child = spawn(project.command, {
-    cwd: project.path,
-    shell: true,
-    env: { ...process.env, FORCE_COLOR: '0' },
-    windowsHide: true
-  })
+  let child: ChildProcess
+  try {
+    child = launchProjectProcess(project)
+  } catch (error) {
+    runtime.status = 'error'
+    runtime.error = error instanceof Error ? error.message : String(error)
+    runtime.pid = null
+    emitRuntime(runtime)
+    appendLog(projectId, 'stderr', runtime.error)
+    throw error
+  }
   const running: RunningProject = {
     child,
     runtime,
@@ -271,7 +307,7 @@ async function startProject(projectId: string): Promise<RuntimeState> {
     runtime.status = 'running'
     runtime.pid = child.pid ?? null
     emitRuntime(runtime)
-    if (project.customUrl) {
+    if (runtime.url) {
       setTimeout(() => {
         void maybeOpenBrowser(project, runtime).catch((error: unknown) => {
           appendLog(projectId, 'stderr', error instanceof Error ? error.message : String(error))
@@ -285,7 +321,7 @@ async function startProject(projectId: string): Promise<RuntimeState> {
     appendLog(projectId, stream, text)
     const output = consumeDevelopmentOutput(running.outputBuffer, text)
     running.outputBuffer = output.remainder
-    const detectedUrl = output.url
+    const detectedUrl = normalizeProjectUrl(output.url)
     if (detectedUrl && !runtime.url) {
       runtime.url = detectedUrl
       emitRuntime(runtime)
@@ -501,7 +537,7 @@ function registerIpc(): void {
     const project = store.getProject(projectId)
     if (!project) throw new Error('找不到這個專案。')
     const runtime = runtimeHistory.get(projectId)
-    const url = runtime?.url || project.customUrl
+    const url = normalizeProjectUrl(project.customUrl || runtime?.url || '')
     if (!url) throw new Error('尚未偵測到可開啟的網址。')
     await openInBrowser(url, selectedBrowser(project))
     await store.touchProject(projectId)

@@ -11,13 +11,13 @@
 </p>
 
 <p align="center">
-  <img alt="版本 v0.3.0" src="https://img.shields.io/badge/version-v0.3.0-7c6cff">
+  <img alt="版本 v0.4.1" src="https://img.shields.io/badge/version-v0.4.1-7c6cff">
   <img alt="Windows 10 與 Windows 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-3b82f6">
   <img alt="架構 x64" src="https://img.shields.io/badge/architecture-x64-16b8a6">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Martinweiting/RepoDesk/releases/download/v0.3.0/RepoDesk-Setup-v0.3.0.exe"><strong>下載 Windows 安裝程式</strong></a>
+  <a href="https://github.com/Martinweiting/RepoDesk/releases/download/v0.4.1/RepoDesk-Setup-v0.4.1.exe"><strong>下載 Windows 安裝程式</strong></a>
   ·
   <a href="https://github.com/Martinweiting/RepoDesk/releases/latest">查看最新版本</a>
 </p>
@@ -35,12 +35,13 @@ RepoDesk 把散落在不同磁碟與資料夾中的本機專案收進一個工�
 - 從卡片啟動、停止或重新啟動專案。
 - 查看即時終端輸出，偵測 `localhost` 網址後開啟瀏覽器。
 - 掃描並啟動沒有 `package.json` 的 Windows 應用程式，例如 `.exe`、`.cmd`、`.bat` 與 `.ps1`。
+- 將 `build`、`test`、`lint` 等次要腳本分開整理，必要時可在專案設定中升格為主要命令。
 - 直接開啟專案資料夾、PowerShell、Visual Studio Code 或 GitHub 頁面。
 - 用收藏、狀態、自訂類型、圖示與預覽圖整理大型專案清單。
 
 ## 下載與安裝
 
-RepoDesk `v0.3.0` 提供 Windows x64 安裝程式。系統需求如下：
+RepoDesk `v0.4.1` 提供 Windows x64 安裝程式。系統需求如下：
 
 - Windows 10 或 Windows 11，x64。
 - 受管理專案本身所需的執行環境，例如 Node.js、Godot、Python、Rust 或 .NET。
@@ -48,7 +49,7 @@ RepoDesk `v0.3.0` 提供 Windows x64 安裝程式。系統需求如下：
 
 安裝步驟：
 
-1. 前往 [Releases](https://github.com/Martinweiting/RepoDesk/releases/latest)，下載 `RepoDesk-Setup-v0.3.0.exe`。
+1. 前往 [Releases](https://github.com/Martinweiting/RepoDesk/releases/latest)，下載 `RepoDesk-Setup-v0.4.1.exe`。
 2. 開啟安裝程式，選擇安裝位置。
 3. 從桌面捷徑或開始功能表啟動 RepoDesk。
 
@@ -121,9 +122,9 @@ RepoDesk 沒有帳號與雲端同步功能。專案清單及偏好設定保存�
 
 設定中的「版本檢查」會先查詢 GitHub Releases；如果儲存庫尚未建立公開 Release，則改讀 GitHub 上的專案版本資訊。發現新版本時，可以直接前往下載頁面。
 
-目前版本 `v0.3.0` 的安裝檔 SHA-256：
+目前版本 `v0.4.1` 的安裝檔 SHA-256：`1FC66F048E00B0FC5A3128CDB0F22F6C9BD74F2CDBDE7C6A7DD7F3BECE56E6E9`
 
-`D6904930A344B76F5FFDB546460CB50C4BE409BCF550F4496EC21A590ECBACB7`
+安裝檔名稱：`RepoDesk-Setup-v0.4.1.exe`
 
 ## 目前版本的使用限制
 
@@ -135,4 +136,4 @@ RepoDesk 沒有帳號與雲端同步功能。專案清單及偏好設定保存�
 
 ## 版本
 
-目前公開版本為 `v0.3.0`，發行內容包括專案掃描與管理、Windows 應用程式啟動、卡片外觀、自訂類型、即時終端輸出、開發網址偵測、版本檢查、Windows 登入後自動啟動，以及 Edge 與 Chrome 開啟設定。安裝檔與 SHA-256 校驗值列於 [GitHub Release](https://github.com/Martinweiting/RepoDesk/releases/tag/v0.3.0)。
+目前公開版本為 `v0.4.1`，發行內容包括專案掃描與管理、Windows 應用程式啟動、可自訂開啟網址、主要與次要腳本分類、原始資料夾名稱保留、深色與亮色模式、卡片外觀、自訂類型、即時終端輸出、開發網址偵測、版本檢查、Windows 登入後自動啟動，以及 Edge 與 Chrome 開啟設定。安裝檔與 SHA-256 校驗值列於 [GitHub Release](https://github.com/Martinweiting/RepoDesk/releases/tag/v0.4.1)。

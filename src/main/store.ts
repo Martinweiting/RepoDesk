@@ -1,5 +1,5 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, normalize } from 'node:path'
+import { basename, dirname, normalize } from 'node:path'
 import type {
   PersistedState,
   ProjectRecord,
@@ -7,7 +7,8 @@ import type {
   ScanResult,
   UserSettings
 } from '../shared/types'
-import { discoverProjects } from '../shared/scanner'
+import { discoverProjects, partitionLaunchCommands } from '../shared/scanner'
+import { normalizeProjectUrl } from '../shared/runtime'
 import {
   DEFAULT_PROJECT_CATEGORIES,
   inferCategoryId,
@@ -18,13 +19,14 @@ const DEFAULT_SETTINGS: UserSettings = {
   defaultBrowser: 'edge',
   autoOpenBrowser: true,
   launchAtLogin: false,
+  theme: 'dark',
   scanDepth: 4,
   cardDisplayMode: 'icon',
   categories: DEFAULT_PROJECT_CATEGORIES
 }
 
 const DEFAULT_STATE: PersistedState = {
-  version: 3,
+  version: 4,
   projects: [],
   settings: DEFAULT_SETTINGS,
   scanHistory: []
@@ -63,14 +65,26 @@ function normalizeCategories(settings: Partial<UserSettings>): UserSettings['cat
 
 function migrateProject(project: ProjectRecord): ProjectRecord {
   const tags = Array.isArray(project.tags) ? project.tags : []
+  const commands = Array.isArray(project.availableCommands) ? project.availableCommands : []
+  const commandGroups = partitionLaunchCommands(commands)
+  const migratedPrimaryCommands = project.command && !commandGroups.primary.includes(project.command)
+    ? [project.command, ...commandGroups.primary]
+    : commandGroups.primary
   return {
     ...project,
+    folderName: project.folderName || basename(project.path),
     tags,
     iconId: project.iconId || randomProjectIcon(),
     customIconDataUrl: project.customIconDataUrl || '',
     previewImageDataUrl: project.previewImageDataUrl || '',
     categoryId: project.categoryId || inferCategoryId(tags),
-    githubUrl: project.githubUrl || ''
+    githubUrl: project.githubUrl || '',
+    availableCommands: migratedPrimaryCommands,
+    secondaryCommands: [...new Set([
+      ...(Array.isArray(project.secondaryCommands) ? project.secondaryCommands : []),
+      ...commandGroups.secondary
+    ])].filter((command) => command !== project.command),
+    customUrl: project.customUrl ? normalizeProjectUrl(project.customUrl) : ''
   }
 }
 
@@ -106,12 +120,13 @@ export class RepoDeskStore {
       const raw = await readFile(this.filePath, 'utf8')
       const parsed = JSON.parse(raw) as Partial<PersistedState>
       this.state = {
-        version: 3,
+        version: 4,
         projects: Array.isArray(parsed.projects) ? parsed.projects.map(migrateProject) : [],
         settings: {
           defaultBrowser: parsed.settings?.defaultBrowser === 'chrome' ? 'chrome' : 'edge',
           autoOpenBrowser: parsed.settings?.autoOpenBrowser !== false,
           launchAtLogin: parsed.settings?.launchAtLogin === true,
+          theme: parsed.settings?.theme === 'light' ? 'light' : 'dark',
           scanDepth: Math.max(1, Math.min(8, parsed.settings?.scanDepth ?? 4)),
           cardDisplayMode: parsed.settings?.cardDisplayMode === 'preview' ? 'preview' : 'icon',
           categories: normalizeCategories(parsed.settings ?? {})
@@ -148,6 +163,11 @@ export class RepoDeskStore {
     if (index < 0) throw new Error('找不到要更新的專案。')
     this.state.projects[index] = {
       ...project,
+      folderName: project.folderName || basename(project.path),
+      customUrl: project.customUrl ? normalizeProjectUrl(project.customUrl) : '',
+      availableCommands: [...new Set(project.availableCommands ?? [])],
+      secondaryCommands: [...new Set(project.secondaryCommands ?? [])]
+        .filter((command) => command !== project.command),
       updatedAt: new Date().toISOString()
     }
     await this.save()
@@ -186,6 +206,7 @@ export class RepoDeskStore {
       defaultBrowser: settings.defaultBrowser,
       autoOpenBrowser: settings.autoOpenBrowser,
       launchAtLogin: settings.launchAtLogin === true,
+      theme: settings.theme === 'light' ? 'light' : 'dark',
       scanDepth: Math.max(1, Math.min(8, settings.scanDepth)),
       cardDisplayMode: settings.cardDisplayMode === 'preview' ? 'preview' : 'icon',
       categories
@@ -211,7 +232,13 @@ export class RepoDeskStore {
       if (!categoryIds.has(discovered.categoryId)) discovered.categoryId = 'uncategorized'
       const existing = existingByPath.get(pathKey(discovered.path))
       if (existing) {
-        existing.availableCommands = discovered.availableCommands
+        existing.availableCommands = [...new Set([
+          ...discovered.availableCommands,
+          ...(existing.command ? [existing.command] : [])
+        ])]
+        existing.secondaryCommands = discovered.secondaryCommands
+          .filter((command) => command !== existing.command)
+        existing.folderName = discovered.folderName
         existing.githubUrl = discovered.githubUrl
         existing.missing = false
         if (!existing.tags.length) existing.tags = discovered.tags

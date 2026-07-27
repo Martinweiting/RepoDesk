@@ -11,13 +11,13 @@
 </p>
 
 <p align="center">
-  <img alt="Version v0.3.0" src="https://img.shields.io/badge/version-v0.3.0-7c6cff">
+  <img alt="Version v0.4.1" src="https://img.shields.io/badge/version-v0.4.1-7c6cff">
   <img alt="Windows 10 and Windows 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-3b82f6">
   <img alt="x64 architecture" src="https://img.shields.io/badge/architecture-x64-16b8a6">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Martinweiting/RepoDesk/releases/download/v0.3.0/RepoDesk-Setup-v0.3.0.exe"><strong>Download the Windows installer</strong></a>
+  <a href="https://github.com/Martinweiting/RepoDesk/releases/download/v0.4.1/RepoDesk-Setup-v0.4.1.exe"><strong>Download the Windows installer</strong></a>
   ·
   <a href="https://github.com/Martinweiting/RepoDesk/releases/latest">View the latest release</a>
 </p>
@@ -35,12 +35,13 @@ As a project library grows, finding folders, opening terminals, entering command
 - Start, stop, or restart a project from its card.
 - Read live terminal output and open a detected `localhost` URL.
 - Scan and launch Windows applications without `package.json`, including `.exe`, `.cmd`, `.bat`, and `.ps1` files.
+- Keep secondary scripts such as `build`, `test`, and `lint` out of the primary launch list, while still allowing them to be promoted when needed.
 - Open the project folder, PowerShell, Visual Studio Code, or GitHub page.
 - Organize a large library with favorites, statuses, custom categories, icons, and preview images.
 
 ## Download and installation
 
-RepoDesk `v0.3.0` is available as a Windows x64 installer. Requirements:
+RepoDesk `v0.4.1` is available as a Windows x64 installer. Requirements:
 
 - Windows 10 or Windows 11, x64.
 - The runtime required by each managed project, such as Node.js, Godot, Python, Rust, or .NET.
@@ -48,7 +49,7 @@ RepoDesk `v0.3.0` is available as a Windows x64 installer. Requirements:
 
 Installation:
 
-1. Open [Releases](https://github.com/Martinweiting/RepoDesk/releases/latest) and download `RepoDesk-Setup-v0.3.0.exe`.
+1. Open [Releases](https://github.com/Martinweiting/RepoDesk/releases/latest) and download `RepoDesk-Setup-v0.4.1.exe`.
 2. Run the installer and choose an installation folder.
 3. Start RepoDesk from its desktop shortcut or the Start menu.
 
@@ -121,9 +122,9 @@ Removing a card, using batch management, or clearing the library removes the Rep
 
 The Settings panel's version check first queries GitHub Releases. If the repository has no public Release yet, it falls back to the project version information on GitHub. When a newer version is found, the download page can be opened directly.
 
-SHA-256 for the current `v0.3.0` installer:
+SHA-256 for the current `v0.4.1` installer: `1FC66F048E00B0FC5A3128CDB0F22F6C9BD74F2CDBDE7C6A7DD7F3BECE56E6E9`.
 
-`D6904930A344B76F5FFDB546460CB50C4BE409BCF550F4496EC21A590ECBACB7`
+Installer name: `RepoDesk-Setup-v0.4.1.exe`
 
 ## Current limitations
 
@@ -135,4 +136,4 @@ SHA-256 for the current `v0.3.0` installer:
 
 ## Version
 
-The current public version is `v0.3.0`. It includes project scanning and management, Windows application launching, card artwork, custom categories, live terminal output, development URL detection, version checks, Windows login startup, and Edge or Chrome launch settings. The installer and SHA-256 checksum are listed on the [GitHub Release](https://github.com/Martinweiting/RepoDesk/releases/tag/v0.3.0).
+The current public version is `v0.4.1`. It includes project scanning and management, Windows application launching, customizable launch URLs, primary and secondary script classification, original folder-name preservation, dark and light themes, card artwork, custom categories, live terminal output, development URL detection, version checks, Windows login startup, and Edge or Chrome launch settings. The installer and SHA-256 checksum are listed on the [GitHub Release](https://github.com/Martinweiting/RepoDesk/releases/tag/v0.4.1).

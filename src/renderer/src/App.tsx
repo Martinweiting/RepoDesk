@@ -36,6 +36,15 @@ interface ToastState {
 
 type ScanPhase = 'idle' | 'choosing' | 'scanning'
 
+function applyTheme(theme: UserSettings['theme']): void {
+  document.documentElement.dataset.theme = theme
+  document.documentElement.style.colorScheme = theme
+  document.querySelector('meta[name="theme-color"]')?.setAttribute(
+    'content',
+    theme === 'light' ? '#f4f6fb' : '#0b0d14'
+  )
+}
+
 function stopped(projectId: string): RuntimeState {
   return {
     projectId,
@@ -124,6 +133,11 @@ export function App() {
   }, [])
 
   useEffect(() => {
+    const theme = state?.settings.theme ?? 'dark'
+    applyTheme(theme)
+  }, [state?.settings.theme])
+
+  useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(null), 3500)
     return () => window.clearTimeout(timer)
@@ -152,6 +166,7 @@ export function App() {
         return [
           project.name,
           project.description,
+          project.folderName,
           project.path,
           ...project.tags
         ].some((value) => value.toLocaleLowerCase('zh-TW').includes(normalizedQuery))
@@ -621,6 +636,7 @@ export function App() {
         <ProjectDrawer
           project={selectedProject}
           categories={state.settings.categories}
+          defaultBrowser={state.settings.defaultBrowser}
           runtime={runtimeFor(selectedProject.id)}
           onClose={() => setSelectedProjectId(null)}
           onSave={updateProject}
@@ -641,6 +657,7 @@ export function App() {
           settings={state.settings}
           appVersion={appVersion}
           onClose={() => setSettingsOpen(false)}
+          onPreviewTheme={applyTheme}
           onSave={updateSettings}
           onCheckVersion={() => api.checkForUpdates()}
           onOpenUpdatePage={() => api.openUpdatePage()}

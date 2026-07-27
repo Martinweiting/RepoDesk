@@ -75,6 +75,22 @@
     monospace;
 }
 
+html[data-theme='light'] {
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --panel-raised: #ffffff;
+  --panel-soft: #eef1f8;
+  --line: rgba(39, 48, 72, 0.12);
+  --line-strong: rgba(39, 48, 72, 0.2);
+  --text: #1b2233;
+  --muted: #5b657a;
+  --subtle: #7b8496;
+  --violet: #6858d8;
+  --violet-bright: #5948c9;
+  --green: #168b6d;
+  --red: #bd4d65;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -881,6 +897,17 @@ button:disabled {
   white-space: nowrap;
 }
 
+.project-folder-name {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--subtle);
+  font-family: var(--font-code);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-copy p {
   display: -webkit-box;
   min-height: 32px;
@@ -1076,6 +1103,17 @@ button:disabled {
   cursor: pointer;
   text-align: left;
   transition: 140ms ease;
+}
+
+.project-github-slot {
+  width: calc(100% - 34px);
+  height: 34px;
+  margin: 11px 17px 0;
+}
+
+.project-github-slot .project-github-link {
+  width: 100%;
+  margin: 0;
 }
 
 .project-github-link:hover {
@@ -1399,6 +1437,16 @@ button:disabled {
   white-space: nowrap;
 }
 
+.drawer-folder-name {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--subtle);
+  font-family: var(--font-code);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .close-button {
   margin-left: auto;
 }
@@ -1710,7 +1758,7 @@ button:disabled {
 
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 7px;
 }
 
@@ -1747,6 +1795,51 @@ button:disabled {
   font-size: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.secondary-command-group {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.secondary-command-group summary {
+  padding: 9px 10px;
+  color: var(--subtle);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.secondary-command-list {
+  display: grid;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.secondary-command-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 7px;
+  background: color-mix(in srgb, var(--panel-soft) 76%, transparent);
+  border-radius: 6px;
+}
+
+.secondary-command-item code {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-code);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.secondary-command-item .small-button {
+  flex: 0 0 auto;
 }
 
 .danger-zone {
@@ -1883,6 +1976,55 @@ button:disabled {
   background: rgba(242, 118, 141, 0.06);
   border: 1px solid rgba(242, 118, 141, 0.16);
   border-radius: 8px;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.theme-option {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel-soft) 78%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: 140ms ease;
+}
+
+.theme-option:hover,
+.theme-option.selected {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--violet) 55%, var(--line-strong));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--violet) 13%, transparent);
+}
+
+.theme-option.selected {
+  background: color-mix(in srgb, var(--violet) 12%, var(--panel));
+}
+
+.theme-option > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.theme-option strong {
+  color: currentColor;
+  font-size: 13px;
+}
+
+.theme-option small {
+  margin-top: 4px;
+  color: var(--subtle);
+  font-size: 11px;
 }
 
 .settings-section:last-child {
@@ -2647,4 +2789,153 @@ button:disabled {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Light theme: keep the same hierarchy while replacing dark-only surfaces and text. */
+html[data-theme='light'] body {
+  color: var(--text);
+  background:
+    radial-gradient(circle at 78% -10%, rgba(119, 103, 226, 0.12), transparent 34%),
+    var(--bg);
+}
+
+html[data-theme='light'] .sidebar {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+html[data-theme='light'] .topbar {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme='light'] .search-box,
+html[data-theme='light'] .overview-stats,
+html[data-theme='light'] .scan-history,
+html[data-theme='light'] .empty-state {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+html[data-theme='light'] .project-card,
+html[data-theme='light'] .continue-card,
+html[data-theme='light'] .settings-modal,
+html[data-theme='light'] .project-drawer {
+  background: var(--panel);
+  box-shadow: 0 16px 34px rgba(45, 57, 86, 0.1);
+}
+
+html[data-theme='light'] .continue-card {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--project-accent) 10%, transparent), transparent 42%),
+    var(--panel);
+}
+
+html[data-theme='light'] .drawer-runtime,
+html[data-theme='light'] .drawer-footer,
+html[data-theme='light'] .modal-footer {
+  background: var(--panel-soft);
+}
+
+html[data-theme='light'] .project-copy h3,
+html[data-theme='light'] .continue-copy strong,
+html[data-theme='light'] .section-title-row h2,
+html[data-theme='light'] .overview h1,
+html[data-theme='light'] .settings-section h3,
+html[data-theme='light'] .form-section h3,
+html[data-theme='light'] .drawer-header h2,
+html[data-theme='light'] .modal-header h2 {
+  color: var(--text);
+}
+
+html[data-theme='light'] .project-copy p,
+html[data-theme='light'] .overview p,
+html[data-theme='light'] .continue-copy p,
+html[data-theme='light'] .section-title-row span,
+html[data-theme='light'] .project-folder-name,
+html[data-theme='light'] .drawer-folder-name,
+html[data-theme='light'] .drawer-runtime span:not(.runtime-dot),
+html[data-theme='light'] .section-description,
+html[data-theme='light'] .form-section small,
+html[data-theme='light'] .danger-zone p {
+  color: var(--muted);
+}
+
+html[data-theme='light'] .nav-label,
+html[data-theme='light'] .brand span,
+html[data-theme='light'] .eyebrow,
+html[data-theme='light'] .icon-button,
+html[data-theme='light'] .nav-item,
+html[data-theme='light'] .tag-row span,
+html[data-theme='light'] .project-status,
+html[data-theme='light'] .runtime-pill,
+html[data-theme='light'] .section-title-row span,
+html[data-theme='light'] .scan-history li > span,
+html[data-theme='light'] .scan-history time,
+html[data-theme='light'] .path-box,
+html[data-theme='light'] .color-field code {
+  color: var(--muted);
+}
+
+html[data-theme='light'] .nav-item:hover,
+html[data-theme='light'] .icon-button:hover,
+html[data-theme='light'] .secondary-button:hover,
+html[data-theme='light'] .refresh-button:hover,
+html[data-theme='light'] .small-button:hover,
+html[data-theme='light'] .tool-grid button:hover {
+  color: var(--text);
+  background: rgba(104, 88, 216, 0.08);
+}
+
+html[data-theme='light'] .nav-item.active {
+  color: #40358f;
+  background: linear-gradient(90deg, rgba(104, 88, 216, 0.14), rgba(104, 88, 216, 0.05));
+}
+
+html[data-theme='light'] .nav-count,
+html[data-theme='light'] .project-command,
+html[data-theme='light'] .project-github-link,
+html[data-theme='light'] .tool-grid button,
+html[data-theme='light'] .path-box,
+html[data-theme='light'] .form-section input,
+html[data-theme='light'] .form-section textarea,
+html[data-theme='light'] .form-section select,
+html[data-theme='light'] .depth-field input,
+html[data-theme='light'] .color-field {
+  color: var(--text);
+  background: var(--panel-soft);
+  border-color: var(--line);
+}
+
+html[data-theme='light'] .project-command:hover,
+html[data-theme='light'] .project-github-link:hover {
+  color: #40358f;
+  background: rgba(104, 88, 216, 0.08);
+}
+
+html[data-theme='light'] .project-preview,
+html[data-theme='light'] .preview-editor {
+  background:
+    radial-gradient(circle at 26% 30%, color-mix(in srgb, var(--project-accent) 18%, transparent), transparent 44%),
+    #e8ecf5;
+}
+
+html[data-theme='light'] .preview-shade {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 45%, rgba(34, 43, 66, 0.22));
+}
+
+html[data-theme='light'] .preview-icon-chip,
+html[data-theme='light'] .preview-state .project-status,
+html[data-theme='light'] .preview-state .runtime-pill,
+html[data-theme='light'] .preview-state .favorite-button {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.84);
+  border-color: var(--line-strong);
+}
+
+html[data-theme='light'] .preview-state .favorite-button.selected {
+  color: #9b6e00;
+  background: #fff6d8;
+  border-color: #e8c96b;
+}
+
+html[data-theme='light'] .secondary-command-item {
+  background: rgba(104, 88, 216, 0.06);
 }

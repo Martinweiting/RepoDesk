@@ -44,6 +44,22 @@ const ACCENTS = [
 ]
 
 const WINDOWS_LAUNCH_EXTENSIONS = ['.exe', '.cmd', '.bat', '.ps1'] as const
+const PRIMARY_SCRIPT_NAMES = new Set([
+  'dev',
+  'start',
+  'serve',
+  'preview',
+  'run',
+  'launch',
+  'watch',
+  'electron',
+  'desktop'
+])
+
+export interface LaunchCommandGroups {
+  primary: string[]
+  secondary: string[]
+}
 
 interface PackageJson {
   name?: string
@@ -122,17 +138,37 @@ function inferTags(pkg: PackageJson | null, markerNames: Set<string>): string[] 
   return [...tags].slice(0, 5)
 }
 
-function commandsFromPackage(pkg: PackageJson | null): string[] {
-  if (!pkg?.scripts) return []
+export function partitionLaunchCommands(commands: string[]): LaunchCommandGroups {
+  const primary: string[] = []
+  const secondary: string[] = []
+  for (const command of [...new Set(commands)].filter(Boolean)) {
+    const scriptName = command
+      .replace(/^npm run\s+/i, '')
+      .split(/\s+/)[0]
+      ?.toLocaleLowerCase('en-US') ?? ''
+    const rootName = scriptName.split(':')[0]
+    if (PRIMARY_SCRIPT_NAMES.has(scriptName) || PRIMARY_SCRIPT_NAMES.has(rootName)) primary.push(command)
+    else secondary.push(command)
+  }
+  return { primary, secondary }
+}
+
+function commandsFromPackage(pkg: PackageJson | null): LaunchCommandGroups {
+  if (!pkg?.scripts) return { primary: [], secondary: [] }
   const preference = ['dev', 'start', 'serve', 'preview']
   const ordered = [
     ...preference.filter((script) => script in (pkg.scripts ?? {})),
     ...Object.keys(pkg.scripts).filter((script) => !preference.includes(script))
   ]
-  return ordered.slice(0, 12).map((script) => `npm run ${script}`)
+  return partitionLaunchCommands(ordered.slice(0, 24).map((script) => `npm run ${script}`))
 }
 
-function windowsLaunchCommands(fileNames: Set<string>): string[] {
+interface WindowsLaunchEntry {
+  name: string
+  command: string
+}
+
+function windowsLaunchEntries(fileNames: Set<string>): WindowsLaunchEntry[] {
   const ranked = [...fileNames]
     .filter((name) => WINDOWS_LAUNCH_EXTENSIONS.some((extension) =>
       name.toLocaleLowerCase('en-US').endsWith(extension)))
@@ -147,10 +183,37 @@ function windowsLaunchCommands(fileNames: Set<string>): string[] {
 
   return ranked.map((name) => {
     if (name.toLocaleLowerCase('en-US').endsWith('.ps1')) {
-      return `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\${name}"`
+      return {
+        name,
+        command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\\${name}"`
+      }
     }
-    return `".\\${name}"`
+    return { name, command: `".\\${name}"` }
   })
+}
+
+function windowsLaunchCommands(fileNames: Set<string>): string[] {
+  return windowsLaunchEntries(fileNames).map((entry) => entry.command)
+}
+
+function isLikelySecondaryWindowsScript(name: string): boolean {
+  const lowerName = name.toLocaleLowerCase('en-US')
+  if (!['.cmd', '.bat', '.ps1'].some((extension) => lowerName.endsWith(extension))) {
+    return false
+  }
+  return /(?:^|[-_. ])(?:test|tests|testing|benchmark|build|setup|update|install|uninstall|placeholder|generate|migrate|lint|format|deploy|docker|release|package|seed)(?:[-_. ]|$)/.test(
+    lowerName.replace(/\.(?:cmd|bat|ps1)$/, '')
+  )
+}
+
+function windowsLaunchCommandGroups(fileNames: Set<string>): LaunchCommandGroups {
+  const primary: string[] = []
+  const secondary: string[] = []
+  for (const entry of windowsLaunchEntries(fileNames)) {
+    if (isLikelySecondaryWindowsScript(entry.name)) secondary.push(entry.command)
+    else primary.push(entry.command)
+  }
+  return { primary, secondary }
 }
 
 function defaultCommandFromPackage(pkg: PackageJson | null): string {
@@ -172,8 +235,17 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     }
   }
 
-  const windowsCommands = windowsLaunchCommands(fileNames)
-  let availableCommands = [...commandsFromPackage(pkg), ...windowsCommands]
+  const windowsGroups = windowsLaunchCommandGroups(fileNames)
+  const windowsCommands = [...windowsGroups.primary, ...windowsGroups.secondary]
+  const packageCommands = commandsFromPackage(pkg)
+  let availableCommands = [...packageCommands.primary]
+  let secondaryCommands = [...packageCommands.secondary, ...windowsGroups.secondary]
+  if (!availableCommands.length) {
+    availableCommands = windowsGroups.primary.slice(0, 1)
+    secondaryCommands.push(...windowsGroups.primary.slice(1))
+  } else {
+    secondaryCommands.push(...windowsGroups.primary)
+  }
   let defaultCommand = defaultCommandFromPackage(pkg)
   if (fileNames.has('project.godot')) availableCommands = ['godot --editor', ...availableCommands]
   if (fileNames.has('pyproject.toml') && await exists(join(projectPath, 'app.py'))) {
@@ -185,7 +257,10 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     defaultCommand = 'python app.py'
   }
   if (fileNames.has('Cargo.toml')) defaultCommand = 'cargo run'
-  defaultCommand ||= windowsCommands[0] ?? ''
+  defaultCommand ||= availableCommands[0] ?? ''
+
+  const primarySet = new Set(availableCommands)
+  secondaryCommands = [...new Set(secondaryCommands)].filter((command) => !primarySet.has(command))
 
   const now = new Date().toISOString()
   const normalizedPath = normalize(projectPath)
@@ -195,6 +270,7 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
   return {
     id: randomUUID(),
     path: normalizedPath,
+    folderName: basename(normalizedPath),
     name: pkg?.name ? titleFromFolder(pkg.name) : titleFromFolder(basename(normalizedPath)),
     description: pkg?.description?.trim() || '尚未填寫專案介紹。',
     tags,
@@ -206,6 +282,7 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     previewImageDataUrl: '',
     categoryId: inferCategoryId(tags),
     command: defaultCommand,
+    secondaryCommands,
     browser: 'inherit',
     customUrl: '',
     githubUrl,

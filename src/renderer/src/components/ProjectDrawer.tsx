@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Code2,
+  Copy,
   ExternalLink,
   FolderOpen,
   ImagePlus,
@@ -14,6 +15,7 @@ import {
   X
 } from 'lucide-react'
 import type {
+  GlobalBrowser,
   ProjectCategory,
   ProjectRecord,
   ProjectVisualKind,
@@ -21,10 +23,12 @@ import type {
 } from '../../../shared/types'
 import { PROJECT_ICON_IDS } from '../../../shared/visuals'
 import { PROJECT_ICON_LABELS, ProjectIcon } from './ProjectIcon'
+import { normalizeProjectUrl } from '../../../shared/runtime'
 
 interface ProjectDrawerProps {
   project: ProjectRecord
   categories: ProjectCategory[]
+  defaultBrowser: GlobalBrowser
   runtime: RuntimeState
   onClose: () => void
   onSave: (project: ProjectRecord) => Promise<void>
@@ -42,6 +46,7 @@ interface ProjectDrawerProps {
 export function ProjectDrawer({
   project,
   categories,
+  defaultBrowser,
   runtime,
   onClose,
   onSave,
@@ -58,15 +63,24 @@ export function ProjectDrawer({
   const [draft, setDraft] = useState(project)
   const [saving, setSaving] = useState(false)
   const [importingVisual, setImportingVisual] = useState<ProjectVisualKind | null>(null)
+  const [urlError, setUrlError] = useState('')
+  const [copiedValue, setCopiedValue] = useState('')
   const isRunning = runtime.status === 'running'
 
   useEffect(() => setDraft(project), [project])
 
   async function save(): Promise<void> {
+    const normalizedUrl = draft.customUrl.trim() ? normalizeProjectUrl(draft.customUrl) : ''
+    if (draft.customUrl.trim() && !normalizedUrl) {
+      setUrlError('網址格式不正確，請輸入 localhost:3000 或完整的 http://、https:// 網址。')
+      return
+    }
+    setUrlError('')
     setSaving(true)
     try {
       await onSave({
         ...draft,
+        customUrl: normalizedUrl,
         tags: draft.tags.map((tag) => tag.trim()).filter(Boolean)
       })
     } finally {
@@ -84,6 +98,25 @@ export function ProjectDrawer({
         : { ...current, customIconDataUrl: dataUrl })
     } finally {
       setImportingVisual(null)
+    }
+  }
+
+  function promoteCommand(command: string): void {
+    setDraft((current) => ({
+      ...current,
+      command,
+      availableCommands: [command, ...current.availableCommands.filter((candidate) => candidate !== command)],
+      secondaryCommands: current.secondaryCommands.filter((candidate) => candidate !== command)
+    }))
+  }
+
+  async function copyValue(value: string, key: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopiedValue(key)
+      window.setTimeout(() => setCopiedValue((current) => current === key ? '' : current), 1600)
+    } catch {
+      setCopiedValue('')
     }
   }
 
@@ -107,6 +140,7 @@ export function ProjectDrawer({
           <div>
             <span className="eyebrow">專案設定</span>
             <h2 id="project-drawer-title">{draft.name}</h2>
+            <span className="drawer-folder-name">資料夾：{draft.folderName}</span>
           </div>
           <button type="button" className="icon-button close-button" onClick={onClose} aria-label="關閉">
             <X size={20} />
@@ -118,11 +152,11 @@ export function ProjectDrawer({
             <span className={`runtime-dot ${runtime.status}`} />
             <div>
               <strong>{isRunning ? '開發伺服器執行中' : runtime.status === 'error' ? '上次啟動失敗' : '目前未執行'}</strong>
-              <span>{runtime.url || runtime.error || draft.command || '尚未設定啟動命令'}</span>
+                <span>{draft.customUrl || runtime.url || runtime.error || draft.command || '尚未設定啟動命令'}</span>
             </div>
           </div>
           <div className="runtime-actions">
-            {isRunning ? (
+            {isRunning || runtime.url || project.customUrl ? (
               <>
                 <button type="button" className="small-button" onClick={onOpenUrl}><ExternalLink size={14} />網站</button>
                 <button type="button" className="small-button" onClick={onRestart}><RefreshCcw size={14} />重啟</button>
@@ -220,11 +254,12 @@ export function ProjectDrawer({
           <section className="form-section">
             <h3>基本資料</h3>
             <label>
-              <span>專案名稱</span>
-              <input
+                <span>顯示名稱</span>
+                <input
                 value={draft.name}
                 onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-              />
+                />
+                <small>原始資料夾名稱：{draft.folderName}</small>
             </label>
             <label>
               <span>專案介紹</span>
@@ -299,6 +334,21 @@ export function ProjectDrawer({
                 {draft.availableCommands.map((command) => <option value={command} key={command} />)}
               </datalist>
             </label>
+            {draft.secondaryCommands.length > 0 && (
+              <details className="secondary-command-group">
+                <summary>其他腳本（次要） · {draft.secondaryCommands.length}</summary>
+                <div className="secondary-command-list">
+                  {draft.secondaryCommands.map((command) => (
+                    <div className="secondary-command-item" key={command}>
+                      <code>{command}</code>
+                      <button type="button" className="small-button" onClick={() => promoteCommand(command)}>
+                        設為主要
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             <label>
               <span>瀏覽器</span>
               <select
@@ -308,19 +358,25 @@ export function ProjectDrawer({
                   browser: event.target.value as ProjectRecord['browser']
                 })}
               >
-                <option value="inherit">跟隨 RepoDesk 預設</option>
+                <option value="inherit">
+                  跟隨 RepoDesk 預設（{defaultBrowser === 'edge' ? 'Microsoft Edge' : 'Google Chrome'}）
+                </option>
                 <option value="edge">Microsoft Edge</option>
                 <option value="chrome">Google Chrome</option>
               </select>
               <small>只影響這個專案；選擇跟隨預設時會使用偏好設定中的瀏覽器。</small>
             </label>
             <label>
-              <span>固定網址（選填）</span>
+              <span>開啟網址（可自訂）</span>
               <input
                 value={draft.customUrl}
-                onChange={(event) => setDraft({ ...draft, customUrl: event.target.value })}
-                placeholder="留白時會從終端輸出自動偵測"
+                onChange={(event) => {
+                  setUrlError('')
+                  setDraft({ ...draft, customUrl: event.target.value })
+                }}
+                placeholder="localhost:3000 或 https://example.com"
               />
+              <small>{urlError || '留白時會從終端輸出自動偵測；儲存後可從卡片直接開啟。'}</small>
             </label>
           </section>
 
@@ -330,6 +386,9 @@ export function ProjectDrawer({
               <button type="button" onClick={onOpenFolder}><FolderOpen size={17} />檔案總管</button>
               <button type="button" onClick={onOpenTerminal}><TerminalSquare size={17} />PowerShell</button>
               <button type="button" onClick={onOpenEditor}><Code2 size={17} />Visual Studio Code</button>
+              <button type="button" onClick={() => void copyValue(draft.path, 'path')}>
+                <Copy size={17} />{copiedValue === 'path' ? '已複製路徑' : '複製路徑'}
+              </button>
             </div>
             <div className="path-box" title={draft.path}>{draft.path}</div>
           </section>

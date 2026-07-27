@@ -15,6 +15,7 @@ export interface ProjectCategory {
 export interface ProjectRecord {
   id: string
   path: string
+  folderName: string
   name: string
   description: string
   tags: string[]
@@ -26,6 +27,7 @@ export interface ProjectRecord {
   previewImageDataUrl: string
   categoryId: string
   command: string
+  secondaryCommands: string[]
   browser: ProjectBrowser
   customUrl: string
   githubUrl: string
@@ -46,13 +48,14 @@ export interface UserSettings {
   defaultBrowser: GlobalBrowser
   autoOpenBrowser: boolean
   launchAtLogin: boolean
+  theme: 'dark' | 'light'
   scanDepth: number
   cardDisplayMode: CardDisplayMode
   categories: ProjectCategory[]
 }
 
 export interface PersistedState {
-  version: 3
+  version: 4
   projects: ProjectRecord[]
   settings: UserSettings
   scanHistory: ScanHistoryEntry[]
