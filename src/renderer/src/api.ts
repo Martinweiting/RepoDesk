@@ -23,6 +23,9 @@ const unavailableApi: RepoDeskApi = {
   async selectAndAddProject() {
     return unavailable()
   },
+  async addShortcut(_shortcutPath: string) {
+    return unavailable()
+  },
   async selectScanDirectory() {
     return unavailable()
   },

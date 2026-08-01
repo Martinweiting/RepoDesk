@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { stat } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { readFile, stat } from 'node:fs/promises'
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { inspectProject } from '../shared/scanner'
 import type {
@@ -138,6 +138,69 @@ function launchProjectProcess(project: ProjectRecord): ChildProcess {
     env: { ...process.env, FORCE_COLOR: '0' },
     windowsHide: true
   })
+}
+
+function windowsTargetCommand(targetPath: string, projectPath: string, args = ''): string {
+  const target = relative(projectPath, targetPath).replaceAll('/', '\\')
+  const relativeTarget = `.${target.startsWith('\\') ? '' : '\\'}${target}`
+  const extension = extname(targetPath).toLocaleLowerCase('en-US')
+  const suffix = args.trim() ? ` ${args.trim()}` : ''
+  if (extension === '.ps1') {
+    return `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${relativeTarget}"${suffix}`
+  }
+  if (['.exe', '.cmd', '.bat'].includes(extension)) return `"${relativeTarget}"${suffix}`
+  return ''
+}
+
+async function targetFromInternetShortcut(shortcutPath: string): Promise<string> {
+  const contents = await readFile(shortcutPath, 'utf8')
+  const target = contents.match(/^URL=(.+)$/im)?.[1]?.trim() ?? ''
+  if (!target) throw new Error('找不到捷徑檔案中的目標路徑。')
+  if (/^file:\/\//i.test(target)) {
+    const decoded = decodeURIComponent(target.replace(/^file:\/\//i, ''))
+    return decoded.replace(/^\/+([A-Za-z]:[\\/])/, '$1')
+  }
+  if (/^[A-Za-z]:[\\/]/.test(target) || target.startsWith('\\\\')) return target
+  throw new Error('這個捷徑指向網站或非 Windows 檔案路徑，請改用專案資料夾或程式捷徑。')
+}
+
+async function inspectShortcut(shortcutPath: string): Promise<ProjectRecord> {
+  const inputPath = shortcutPath.trim().replace(/^(?:"|')|(?:"|')$/g, '')
+  if (!inputPath) throw new Error('請輸入捷徑或目標路徑。')
+
+  const inputInfo = await stat(inputPath).catch(() => null)
+  if (!inputInfo) throw new Error(`找不到捷徑或目標：${inputPath}`)
+
+  let targetPath = resolve(inputPath)
+  let shortcutArguments = ''
+  const extension = extname(inputPath).toLocaleLowerCase('en-US')
+  if (extension === '.lnk') {
+    const details = shell.readShortcutLink(targetPath)
+    targetPath = isAbsolute(details.target)
+      ? details.target
+      : resolve(dirname(targetPath), details.target)
+    shortcutArguments = details.args ?? ''
+  } else if (extension === '.url') {
+    targetPath = await targetFromInternetShortcut(targetPath)
+  }
+
+  const targetInfo = await stat(targetPath).catch(() => null)
+  if (!targetInfo) throw new Error(`捷徑目標不存在：${targetPath}`)
+  const projectPath = targetInfo.isDirectory() ? targetPath : dirname(targetPath)
+  const project = await inspectProject(projectPath)
+  if (!targetInfo.isDirectory()) {
+    const targetCommand = windowsTargetCommand(targetPath, projectPath, shortcutArguments)
+    if (targetCommand) {
+      project.command = targetCommand
+      project.availableCommands = [
+        targetCommand,
+        ...project.availableCommands.filter((command) => command !== targetCommand)
+      ]
+      project.secondaryCommands = project.secondaryCommands.filter((command) => command !== targetCommand)
+    }
+  }
+  if (!project.name.trim()) project.name = basename(projectPath)
+  return project
 }
 
 function applyLaunchAtLogin(enabled: boolean): void {
@@ -463,6 +526,12 @@ function registerIpc(): void {
     })
     if (result.canceled || !result.filePaths[0]) return null
     const project = await inspectProject(result.filePaths[0])
+    return store.addProject(project)
+  })
+
+  ipcMain.handle('project:add-shortcut', async (_event, shortcutPath: string) => {
+    if (typeof shortcutPath !== 'string') throw new Error('捷徑路徑格式不正確。')
+    const project = await inspectShortcut(shortcutPath)
     return store.addProject(project)
   })
 

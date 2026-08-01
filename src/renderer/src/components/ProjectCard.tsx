@@ -89,6 +89,15 @@ export function ProjectCard({
     >
       <div className="project-accent" />
       {selectionMode && (
+        <button
+          type="button"
+          className="card-selection-overlay"
+          onClick={onSelectionChange}
+          aria-label={selected ? `取消選取 ${project.name}` : `選取 ${project.name}`}
+          aria-pressed={selected}
+        />
+      )}
+      {selectionMode && (
         <label className="card-selection">
           <input
             type="checkbox"

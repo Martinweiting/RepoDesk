@@ -22,11 +22,13 @@ const DEFAULT_SETTINGS: UserSettings = {
   theme: 'dark',
   scanDepth: 4,
   cardDisplayMode: 'icon',
+  cardSize: 'medium',
+  cardColumns: 3,
   categories: DEFAULT_PROJECT_CATEGORIES
 }
 
 const DEFAULT_STATE: PersistedState = {
-  version: 4,
+  version: 5,
   projects: [],
   settings: DEFAULT_SETTINGS,
   scanHistory: []
@@ -73,6 +75,7 @@ function migrateProject(project: ProjectRecord): ProjectRecord {
   return {
     ...project,
     folderName: project.folderName || basename(project.path),
+    sourceRoot: project.sourceRoot || '',
     tags,
     iconId: project.iconId || randomProjectIcon(),
     customIconDataUrl: project.customIconDataUrl || '',
@@ -120,7 +123,7 @@ export class RepoDeskStore {
       const raw = await readFile(this.filePath, 'utf8')
       const parsed = JSON.parse(raw) as Partial<PersistedState>
       this.state = {
-        version: 4,
+        version: 5,
         projects: Array.isArray(parsed.projects) ? parsed.projects.map(migrateProject) : [],
         settings: {
           defaultBrowser: parsed.settings?.defaultBrowser === 'chrome' ? 'chrome' : 'edge',
@@ -129,6 +132,12 @@ export class RepoDeskStore {
           theme: parsed.settings?.theme === 'light' ? 'light' : 'dark',
           scanDepth: Math.max(1, Math.min(8, parsed.settings?.scanDepth ?? 4)),
           cardDisplayMode: parsed.settings?.cardDisplayMode === 'preview' ? 'preview' : 'icon',
+          cardSize: parsed.settings?.cardSize === 'small' || parsed.settings?.cardSize === 'large'
+            ? parsed.settings.cardSize
+            : 'medium',
+          cardColumns: parsed.settings?.cardColumns === 2 || parsed.settings?.cardColumns === 4
+            ? parsed.settings.cardColumns
+            : 3,
           categories: normalizeCategories(parsed.settings ?? {})
         },
         scanHistory: normalizeScanHistory(parsed.scanHistory)
@@ -164,6 +173,7 @@ export class RepoDeskStore {
     this.state.projects[index] = {
       ...project,
       folderName: project.folderName || basename(project.path),
+      sourceRoot: project.sourceRoot || '',
       customUrl: project.customUrl ? normalizeProjectUrl(project.customUrl) : '',
       availableCommands: [...new Set(project.availableCommands ?? [])],
       secondaryCommands: [...new Set(project.secondaryCommands ?? [])]
@@ -209,6 +219,12 @@ export class RepoDeskStore {
       theme: settings.theme === 'light' ? 'light' : 'dark',
       scanDepth: Math.max(1, Math.min(8, settings.scanDepth)),
       cardDisplayMode: settings.cardDisplayMode === 'preview' ? 'preview' : 'icon',
+      cardSize: settings.cardSize === 'small' || settings.cardSize === 'large'
+        ? settings.cardSize
+        : 'medium',
+      cardColumns: settings.cardColumns === 2 || settings.cardColumns === 4
+        ? settings.cardColumns
+        : 3,
       categories
     }
     this.state.projects.forEach((project) => {
@@ -229,6 +245,7 @@ export class RepoDeskStore {
     let updated = 0
 
     for (const discovered of projects) {
+      discovered.sourceRoot = normalizedRoot
       if (!categoryIds.has(discovered.categoryId)) discovered.categoryId = 'uncategorized'
       const existing = existingByPath.get(pathKey(discovered.path))
       if (existing) {
@@ -239,6 +256,7 @@ export class RepoDeskStore {
         existing.secondaryCommands = discovered.secondaryCommands
           .filter((command) => command !== existing.command)
         existing.folderName = discovered.folderName
+        existing.sourceRoot = normalizedRoot
         existing.githubUrl = discovered.githubUrl
         existing.missing = false
         if (!existing.tags.length) existing.tags = discovered.tags

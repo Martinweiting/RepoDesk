@@ -234,6 +234,41 @@ export function SettingsModal({
           </section>
 
           <section className="settings-section">
+            <h3>卡片尺寸與每列數量</h3>
+            <p>調整卡片的閱讀密度，以及桌面寬度下同一排要顯示幾張卡片。</p>
+            <div className="card-layout-fields">
+              <label>
+                <span>卡片尺寸</span>
+                <select
+                  value={draft.cardSize}
+                  onChange={(event) => setDraft({
+                    ...draft,
+                    cardSize: event.target.value as UserSettings['cardSize']
+                  })}
+                >
+                  <option value="small">小型｜適合快速瀏覽</option>
+                  <option value="medium">標準｜平衡資訊量</option>
+                  <option value="large">大型｜適合預覽與閱讀</option>
+                </select>
+              </label>
+              <label>
+                <span>同一排顯示數量</span>
+                <select
+                  value={draft.cardColumns}
+                  onChange={(event) => setDraft({
+                    ...draft,
+                    cardColumns: Number(event.target.value) as UserSettings['cardColumns']
+                  })}
+                >
+                  <option value={2}>2 張</option>
+                  <option value={3}>3 張</option>
+                  <option value={4}>4 張</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="settings-section">
             <h3>專案開啟方式</h3>
             <p>這是所有專案的預設值；每個專案仍可在自己的設定中覆寫。</p>
             <div className="browser-options">

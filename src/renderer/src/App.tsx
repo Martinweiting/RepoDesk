@@ -3,6 +3,7 @@ import {
   CheckCheck,
   FolderPlus,
   FolderSearch2,
+  Link2,
   LayoutGrid,
   ListChecks,
   ListFilter,
@@ -19,6 +20,7 @@ import { ProjectCard } from './components/ProjectCard'
 import { ProjectDrawer } from './components/ProjectDrawer'
 import { ScanHistoryPanel } from './components/ScanHistoryPanel'
 import { SettingsModal } from './components/SettingsModal'
+import { ShortcutModal } from './components/ShortcutModal'
 import { Sidebar, type FilterKey } from './components/Sidebar'
 import type {
   LogEntry,
@@ -35,6 +37,8 @@ interface ToastState {
 }
 
 type ScanPhase = 'idle' | 'choosing' | 'scanning'
+const ALL_SOURCE_FILTER = 'all'
+const UNASSIGNED_SOURCE_FILTER = '__unassigned__'
 
 function applyTheme(theme: UserSettings['theme']): void {
   document.documentElement.dataset.theme = theme
@@ -79,11 +83,13 @@ export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [logProjectId, setLogProjectId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [shortcutOpen, setShortcutOpen] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set())
   const [working, setWorking] = useState(false)
   const [scanPhase, setScanPhase] = useState<ScanPhase>('idle')
   const [scanPath, setScanPath] = useState('')
+  const [sourceFilter, setSourceFilter] = useState(ALL_SOURCE_FILTER)
   const [fatalError, setFatalError] = useState('')
   const [toast, setToast] = useState<ToastState | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -162,11 +168,17 @@ export function App() {
         return true
       })
       .filter((project) => {
+        if (sourceFilter === ALL_SOURCE_FILTER) return true
+        if (sourceFilter === UNASSIGNED_SOURCE_FILTER) return !project.sourceRoot
+        return project.sourceRoot === sourceFilter
+      })
+      .filter((project) => {
         if (!normalizedQuery) return true
         return [
           project.name,
           project.description,
           project.folderName,
+          project.sourceRoot,
           project.path,
           ...project.tags
         ].some((value) => value.toLocaleLowerCase('zh-TW').includes(normalizedQuery))
@@ -181,7 +193,22 @@ export function App() {
           sensitivity: 'base'
         })
       })
-  }, [filter, query, runtimes, state])
+  }, [filter, query, runtimes, sourceFilter, state])
+
+  const sourceRoots = useMemo(() => {
+    if (!state) return []
+    return [...new Set(state.projects
+      .map((project) => project.sourceRoot)
+      .filter(Boolean))].sort((first, second) => first.localeCompare(second, 'zh-Hant'))
+  }, [state])
+  const hasUnassignedSource = Boolean(state?.projects.some((project) => !project.sourceRoot))
+
+  useEffect(() => {
+    const validSource = sourceFilter === ALL_SOURCE_FILTER
+      || (sourceFilter === UNASSIGNED_SOURCE_FILTER && hasUnassignedSource)
+      || sourceRoots.includes(sourceFilter)
+    if (!validSource) setSourceFilter(ALL_SOURCE_FILTER)
+  }, [hasUnassignedSource, sourceFilter, sourceRoots])
 
   const selectedProject = state?.projects.find((project) => project.id === selectedProjectId) ?? null
   const logProject = state?.projects.find((project) => project.id === logProjectId) ?? null
@@ -215,6 +242,20 @@ export function App() {
         setState(nextState)
         showToast('專案已加入 RepoDesk。', 'success')
       }
+    } catch (error) {
+      showToast(errorMessage(error), 'error')
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function addShortcut(shortcutPath: string): Promise<void> {
+    setWorking(true)
+    try {
+      const nextState = await api.addShortcut(shortcutPath)
+      setState(nextState)
+      setShortcutOpen(false)
+      showToast('捷徑已加入 RepoDesk。', 'success')
     } catch (error) {
       showToast(errorMessage(error), 'error')
     } finally {
@@ -450,18 +491,32 @@ export function App() {
             <kbd>Ctrl K</kbd>
           </div>
           <div className="topbar-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => void scanRoot()}
-              disabled={working || scanPhase !== 'idle'}
-              data-testid="scan-directory"
-            >
-              {scanPhase !== 'idle'
-                ? <LoaderCircle className="spin" size={17} />
-                : <FolderSearch2 size={17} />}
-              {scanPhase === 'choosing' ? '等待選擇…' : scanPhase === 'scanning' ? '正在掃描…' : '掃描資料夾'}
-            </button>
+            <div className="scan-action-menu">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void scanRoot()}
+                disabled={working || scanPhase !== 'idle'}
+                data-testid="scan-directory"
+              >
+                {scanPhase !== 'idle'
+                  ? <LoaderCircle className="spin" size={17} />
+                  : <FolderSearch2 size={17} />}
+                {scanPhase === 'choosing' ? '等待選擇…' : scanPhase === 'scanning' ? '正在掃描…' : '掃描資料夾'}
+              </button>
+              <div className="scan-hover-menu" role="menu">
+                <button
+                  type="button"
+                  className="scan-menu-item"
+                  onClick={() => setShortcutOpen(true)}
+                  disabled={working}
+                  role="menuitem"
+                >
+                  <Link2 size={16} />
+                  <span>直接新增捷徑</span>
+                </button>
+              </div>
+            </div>
             <button type="button" className="add-button" onClick={() => void addProject()} disabled={working}>
               {working ? <LoaderCircle className="spin" size={17} /> : <FolderPlus size={17} />}
               加入專案
@@ -533,9 +588,17 @@ export function App() {
 
           <section className="projects-section">
             <div className="section-title-row">
-              <div>
+              <div className="section-heading-main">
                 <h2>{filterTitle(filter, state.settings.categories)}</h2>
                 <span>{visibleProjects.length} 個結果</span>
+                <label className="source-filter">
+                  <span>來源</span>
+                  <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
+                    <option value={ALL_SOURCE_FILTER}>所有資料夾</option>
+                    {sourceRoots.map((root) => <option value={root} key={root}>{root}</option>)}
+                    {hasUnassignedSource && <option value={UNASSIGNED_SOURCE_FILTER}>未指定來源</option>}
+                  </select>
+                </label>
               </div>
               <div className="project-list-actions">
                 {selectionMode ? (
@@ -588,7 +651,10 @@ export function App() {
             </div>
 
             {visibleProjects.length ? (
-              <div className="project-grid">
+              <div
+                className={`project-grid card-size-${state.settings.cardSize} card-columns-${state.settings.cardColumns}`}
+                style={{ '--project-columns': state.settings.cardColumns } as React.CSSProperties}
+              >
                 {visibleProjects.map((project) => (
                   <ProjectCard
                     key={project.id}
@@ -661,6 +727,13 @@ export function App() {
           onSave={updateSettings}
           onCheckVersion={() => api.checkForUpdates()}
           onOpenUpdatePage={() => api.openUpdatePage()}
+        />
+      )}
+
+      {shortcutOpen && (
+        <ShortcutModal
+          onClose={() => setShortcutOpen(false)}
+          onAdd={addShortcut}
         />
       )}
 

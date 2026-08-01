@@ -271,6 +271,7 @@ export async function inspectProject(projectPath: string): Promise<ProjectRecord
     id: randomUUID(),
     path: normalizedPath,
     folderName: basename(normalizedPath),
+    sourceRoot: '',
     name: pkg?.name ? titleFromFolder(pkg.name) : titleFromFolder(basename(normalizedPath)),
     description: pkg?.description?.trim() || '尚未填寫專案介紹。',
     tags,

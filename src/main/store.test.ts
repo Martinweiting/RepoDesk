@@ -29,6 +29,8 @@ describe('RepoDeskStore defaults', () => {
     expect(state.scanHistory).toEqual([])
     expect(state.settings.launchAtLogin).toBe(false)
     expect(state.settings.theme).toBe('dark')
+    expect(state.settings.cardSize).toBe('medium')
+    expect(state.settings.cardColumns).toBe(3)
     expect('scanRoots' in state.settings).toBe(false)
   })
 
@@ -81,6 +83,7 @@ describe('RepoDeskStore defaults', () => {
     }
     expect(state.scanHistory).toHaveLength(5)
     expect(state.scanHistory[0].path).toBe(roots[2])
+    expect(state.projects.find((project) => project.folderName === 'sample-app-2')?.sourceRoot).toBe(roots[2])
     expect(new Set(state.scanHistory.map((entry) => entry.path)).size).toBe(5)
     expect(saved.scanHistory).toHaveLength(5)
     expect(saved.settings).not.toHaveProperty('scanRoots')

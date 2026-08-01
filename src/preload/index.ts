@@ -11,6 +11,7 @@ import type {
 const api: RepoDeskApi = {
   bootstrap: () => ipcRenderer.invoke('app:bootstrap'),
   selectAndAddProject: () => ipcRenderer.invoke('project:select-add'),
+  addShortcut: (shortcutPath: string) => ipcRenderer.invoke('project:add-shortcut', shortcutPath),
   selectScanDirectory: () => ipcRenderer.invoke('scan:select-directory'),
   scanDirectory: (root: string) => ipcRenderer.invoke('scan:run', root),
   updateProject: (project: ProjectRecord) => ipcRenderer.invoke('project:update', project),

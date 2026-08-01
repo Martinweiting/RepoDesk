@@ -3,6 +3,8 @@ export type ProjectBrowser = 'inherit' | GlobalBrowser
 export type ProjectStatus = 'active' | 'paused' | 'complete'
 export type RuntimeStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error'
 export type CardDisplayMode = 'icon' | 'preview'
+export type CardSize = 'small' | 'medium' | 'large'
+export type CardColumns = 2 | 3 | 4
 export type ProjectVisualKind = 'icon' | 'preview'
 
 export interface ProjectCategory {
@@ -16,6 +18,7 @@ export interface ProjectRecord {
   id: string
   path: string
   folderName: string
+  sourceRoot: string
   name: string
   description: string
   tags: string[]
@@ -51,11 +54,13 @@ export interface UserSettings {
   theme: 'dark' | 'light'
   scanDepth: number
   cardDisplayMode: CardDisplayMode
+  cardSize: CardSize
+  cardColumns: CardColumns
   categories: ProjectCategory[]
 }
 
 export interface PersistedState {
-  version: 4
+  version: 5
   projects: ProjectRecord[]
   settings: UserSettings
   scanHistory: ScanHistoryEntry[]
@@ -102,6 +107,7 @@ export interface ScanResult {
 export interface RepoDeskApi {
   bootstrap(): Promise<BootstrapPayload>
   selectAndAddProject(): Promise<PersistedState | null>
+  addShortcut(shortcutPath: string): Promise<PersistedState>
   selectScanDirectory(): Promise<string | null>
   scanDirectory(root: string): Promise<ScanResult>
   updateProject(project: ProjectRecord): Promise<PersistedState>
